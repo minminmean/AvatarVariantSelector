@@ -1,0 +1,17 @@
+{
+  "name": "minminmean.avatar-variant-selector",
+  "displayName": "Avatar Variant Selector",
+  "version": "1.0.0",
+  "description": "Build several upload variants of one avatar from a single scene",
+  "gitDependencies": {},
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.7.0",
+    "nadena.dev.ndmf": ">=1.13.1"
+  },
+  "author": {
+    "name": "MinMinMean",
+    "email": "duralumin0221@gmail.com",
+    "url": "https://github.com/minminmean"
+  },
+  "unity": "2022.3"
+}

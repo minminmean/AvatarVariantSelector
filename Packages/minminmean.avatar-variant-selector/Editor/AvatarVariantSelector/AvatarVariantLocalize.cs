@@ -1,0 +1,212 @@
+using System;
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+namespace MinMinMart.AvatarVariant.Editor
+{
+    /// <summary>
+    /// 表示文字列の辞書。フィールド名が ja.json / en.json のキーと 1 対 1 で対応する。
+    /// {0} などを含むものは string.Format の書式として使う。
+    /// </summary>
+    [Serializable]
+    public struct AvatarVariantLocalizeDictionary
+    {
+        public string language;
+        public string set_asset;
+        public string set_asset_help;
+        public string create_set_asset;
+        public string no_avatar_root;
+        public string no_pipeline_manager;
+
+        public string build_target;
+        public string build_target_new;
+        public string build_target_none;
+        public string blueprint_id;
+        public string blueprint_id_unassigned;
+        public string scene_untouched_help;
+
+        public string switch_header;
+        public string switch_to;
+        public string switch_current;
+        public string mark_new_upload;
+        public string pending_label;
+        public string pending_banner;
+        public string cancel_pending;
+
+        public string variants_header;
+        public string variant_unnamed;
+        public string placeholder_name;
+        public string placeholder_id;
+        public string duplicate;
+        public string delete;
+        public string delete_dialog_title;
+        public string delete_dialog_message;
+        public string delete_dialog_cancel;
+        public string operations_header;
+        public string add_variant;
+        public string copy_suffix;
+
+        public string op_remove;
+        public string op_material;
+        public string op_blendshape;
+        public string field_slot;
+        public string field_material;
+        public string field_shape;
+        public string field_value;
+        public string add_entry;
+        public string drop_area;
+        public string path_broken;
+        public string shape_none;
+        public string shape_missing_suffix;
+        public string outside_avatar_pick;
+        public string outside_avatar_drop;
+        public string allow_unmatched;
+
+        public string warn_duplicate_id;
+        public string warn_remove_missing;
+        public string warn_material_missing;
+        public string warn_material_slot;
+        public string warn_shape_no_renderer;
+        public string warn_shape_unselected;
+        public string warn_shape_missing;
+        public string warn_allow_unmatched;
+
+        public string log_switched;
+        public string log_marked_pending;
+        public string log_created_asset;
+        public string log_wrote_back;
+
+        public string asset_edit_hint;
+        public string asset_select_user;
+        public string asset_unnamed;
+        public string asset_operations;
+        public string asset_operations_value;
+        public string asset_pending;
+        public string asset_user_not_found;
+
+        public string build_multiple_selectors;
+        public string build_no_set;
+        public string build_cannot_resolve;
+        public string build_hint_new;
+        public string build_hint_switch;
+        public string build_allow_unmatched_warn;
+        public string build_via_pending;
+        public string build_remove_missing;
+        public string build_target_missing;
+        public string build_no_renderer;
+        public string build_slot_out_of_range;
+        public string build_shape_missing;
+        public string build_done;
+    }
+
+    /// <summary>
+    /// 辞書の読み込みと言語選択。
+    ///
+    /// 辞書フォルダはこのスクリプト自身の位置から引く。定数のパスも GUID も持たないので、
+    /// フォルダごと移動しても、別プロジェクトへ持ち出しても壊れない。
+    /// 読み込んだ辞書は言語ごとにキャッシュし、毎フレーム読み直さない。
+    /// </summary>
+    public static class AvatarVariantLocalize
+    {
+        public static readonly string[] LanguageNames = { "日本語", "English" };
+        private static readonly string[] LocalizeFiles = { "ja.json", "en.json" };
+
+        private const string LanguagePrefKey = "MinMinMart.AvatarVariant.Language";
+
+        private static int _cachedIndex = -1;
+        private static AvatarVariantLocalizeDictionary _cached;
+
+        /// <summary>
+        /// 選択中の言語。既定はエディタのシステム言語から決める。
+        /// </summary>
+        public static int LanguageIndex
+        {
+            get
+            {
+                var fallback = Application.systemLanguage == SystemLanguage.Japanese ? 0 : 1;
+                return Mathf.Clamp(EditorPrefs.GetInt(LanguagePrefKey, fallback), 0, LocalizeFiles.Length - 1);
+            }
+
+            set
+            {
+                if (value == LanguageIndex) return;
+                EditorPrefs.SetInt(LanguagePrefKey, Mathf.Clamp(value, 0, LocalizeFiles.Length - 1));
+                _cachedIndex = -1;
+            }
+        }
+
+        /// <summary>
+        /// 選択中の言語の辞書。
+        /// </summary>
+        public static AvatarVariantLocalizeDictionary T
+        {
+            get
+            {
+                var index = LanguageIndex;
+                if (_cachedIndex == index) return _cached;
+
+                _cached = Load(index);
+                _cachedIndex = index;
+                return _cached;
+            }
+        }
+
+        /// <summary>
+        /// 言語切り替えのポップアップ。
+        /// </summary>
+        public static void DrawLanguagePopup()
+        {
+            EditorGUI.BeginChangeCheck();
+            var picked = EditorGUILayout.Popup(T.language, LanguageIndex, LanguageNames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                LanguageIndex = picked;
+            }
+        }
+
+        private static AvatarVariantLocalizeDictionary Load(int index)
+        {
+            var folder = FindLocalizeFolder();
+            if (folder == null)
+            {
+                Debug.LogError("[Avatar Variant] Localize フォルダが見つかりません。");
+                return default;
+            }
+
+            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>($"{folder}/{LocalizeFiles[index]}");
+            if (asset == null)
+            {
+                Debug.LogError($"[Avatar Variant] {folder}/{LocalizeFiles[index]} を読み込めません。");
+                return default;
+            }
+
+            return JsonUtility.FromJson<AvatarVariantLocalizeDictionary>(asset.text);
+        }
+
+        /// <summary>
+        /// このスクリプトの場所を起点に Localize フォルダを探す。
+        /// 同じ階層と 1 つ上の階層を見るので、パッケージ配置でも Assets 直置きでも動く。
+        /// </summary>
+        private static string FindLocalizeFolder()
+        {
+            var scriptPath = AssetDatabase.FindAssets($"t:MonoScript {nameof(AvatarVariantLocalize)}")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == nameof(AvatarVariantLocalize));
+
+            if (string.IsNullOrEmpty(scriptPath)) return null;
+
+            var scriptDir = Path.GetDirectoryName(scriptPath);
+            foreach (var dir in new[] { scriptDir, Path.GetDirectoryName(scriptDir) })
+            {
+                if (string.IsNullOrEmpty(dir)) continue;
+
+                var candidate = (dir + "/Localize").Replace('\\', '/');
+                if (AssetDatabase.IsValidFolder(candidate)) return candidate;
+            }
+
+            return null;
+        }
+    }
+}
