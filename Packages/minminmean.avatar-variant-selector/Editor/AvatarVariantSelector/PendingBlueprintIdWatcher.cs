@@ -47,7 +47,7 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantDefinition pending = set.PendingVariant;
             if (pending == null) return;
 
-            VRC.Core.PipelineManager pm = FindPipelineManager(selector);
+            VRC.Core.PipelineManager pm = AvatarRootFinder.FindPipelineManager(selector.transform);
             if (pm == null || string.IsNullOrEmpty(pm.blueprintId)) return;
 
             // 他のバリアントが既に使っている ID なら、採番されたものではないので触らない。
@@ -63,22 +63,6 @@ namespace MinMinMart.AvatarVariant.Editor
             AssetDatabase.SaveAssetIfDirty(set);
 
             Debug.Log(string.Format(AvatarVariantLocalize.T.log_wrote_back, pending.Name, pm.blueprintId), set);
-        }
-
-        internal static VRC.Core.PipelineManager FindPipelineManager(AvatarVariantSelector selector)
-        {
-            Transform t = selector.transform;
-            while (t != null)
-            {
-                if (t.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>() != null)
-                {
-                    return t.GetComponent<VRC.Core.PipelineManager>();
-                }
-
-                t = t.parent;
-            }
-
-            return null;
         }
     }
 }

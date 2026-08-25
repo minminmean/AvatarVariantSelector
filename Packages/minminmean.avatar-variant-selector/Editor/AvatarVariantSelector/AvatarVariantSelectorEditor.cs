@@ -1,11 +1,16 @@
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace MinMinMart.AvatarVariant.Editor
 {
+    /// <summary>
+    /// アバターに付けたコンポーネントの Inspector。
+    ///
+    /// 表示の組み立てと、バリアント一覧の行レイアウトだけを持つ。
+    /// 検証は <see cref="AvatarVariantValidator"/>、切り替えは <see cref="AvatarVariantSwitcher"/>、
+    /// 操作リストは <see cref="VariantOperationGui"/> にそれぞれ委ねている。
+    /// </summary>
     [CustomEditor(typeof(AvatarVariantSelector))]
     public class AvatarVariantSelectorEditor : UnityEditor.Editor
     {
@@ -23,8 +28,11 @@ namespace MinMinMart.AvatarVariant.Editor
         public override void OnInspectorGUI()
         {
             AvatarVariantSelector selector = (AvatarVariantSelector)target;
-            GameObject root = FindAvatarRoot(selector.transform);
-            VRC.Core.PipelineManager pm = root != null ? root.GetComponent<VRC.Core.PipelineManager>() : null;
+            Transform rootTransform = AvatarRootFinder.Find(selector.transform);
+            GameObject root = rootTransform != null ? rootTransform.gameObject : null;
+            VRC.Core.PipelineManager pm = rootTransform != null
+                ? rootTransform.GetComponent<VRC.Core.PipelineManager>()
+                : null;
 
             AvatarVariantLocalize.DrawLanguagePopup();
             EditorGUILayout.Space();
@@ -40,7 +48,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 if (GUILayout.Button(T.create_set_asset, GUILayout.Height(26)))
                 {
-                    CreateSetAsset(selector);
+                    AvatarVariantSetFactory.CreateForSelector(selector);
                 }
 
                 return;
@@ -85,8 +93,8 @@ namespace MinMinMart.AvatarVariant.Editor
                 SerializedProperty nameProp = variant.FindPropertyRelative("Name");
                 SerializedProperty idProp = variant.FindPropertyRelative("BlueprintId");
                 bool isCurrent = pm != null
-                                && !string.IsNullOrEmpty(idProp.stringValue)
-                                && idProp.stringValue == pm.blueprintId;
+                                 && !string.IsNullOrEmpty(idProp.stringValue)
+                                 && idProp.stringValue == pm.blueprintId;
 
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
@@ -146,9 +154,9 @@ namespace MinMinMart.AvatarVariant.Editor
                     EditorGUILayout.LabelField(T.operations_header, EditorStyles.miniBoldLabel);
 
                     Transform rootT = root != null ? root.transform : null;
-                    DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), rootT);
-                    DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), rootT);
-                    DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), rootT);
+                    VariantOperationGui.DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), rootT);
+                    VariantOperationGui.DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), rootT);
+                    VariantOperationGui.DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), rootT);
                 }
             }
 
@@ -156,213 +164,6 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 AddBlankVariant(variants);
             }
-        }
-
-        // ---------- 操作リスト ----------
-
-        private static void DrawRemoveList(SerializedProperty paths, Transform root)
-        {
-            paths.isExpanded = EditorGUILayout.Foldout(paths.isExpanded,
-                string.Format(T.op_remove, paths.arraySize), true);
-            if (!paths.isExpanded) return;
-
-            using (new EditorGUI.IndentLevelScope())
-            {
-                for (int i = 0; i < paths.arraySize; i++)
-                {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        DrawObjectPathField(paths.GetArrayElementAtIndex(i), root);
-                        if (GUILayout.Button("−", GUILayout.Width(22)))
-                        {
-                            paths.DeleteArrayElementAtIndex(i);
-                            return;
-                        }
-                    }
-                }
-
-                DrawDropArea(paths, root);
-            }
-        }
-
-        private static void DrawMaterialList(SerializedProperty list, Transform root)
-        {
-            list.isExpanded = EditorGUILayout.Foldout(list.isExpanded,
-                string.Format(T.op_material, list.arraySize), true);
-            if (!list.isExpanded) return;
-
-            using (new EditorGUI.IndentLevelScope())
-            {
-                for (int i = 0; i < list.arraySize; i++)
-                {
-                    SerializedProperty e = list.GetArrayElementAtIndex(i);
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                    {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            DrawObjectPathField(e.FindPropertyRelative("RendererPath"), root);
-                            if (GUILayout.Button("−", GUILayout.Width(22)))
-                            {
-                                list.DeleteArrayElementAtIndex(i);
-                                return;
-                            }
-                        }
-
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Slot"), new GUIContent(T.field_slot));
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(T.field_material));
-                    }
-                }
-
-                if (GUILayout.Button(T.add_entry)) list.arraySize++;
-            }
-        }
-
-        private static void DrawBlendShapeList(SerializedProperty list, Transform root)
-        {
-            list.isExpanded = EditorGUILayout.Foldout(list.isExpanded,
-                string.Format(T.op_blendshape, list.arraySize), true);
-            if (!list.isExpanded) return;
-
-            using (new EditorGUI.IndentLevelScope())
-            {
-                for (int i = 0; i < list.arraySize; i++)
-                {
-                    SerializedProperty e = list.GetArrayElementAtIndex(i);
-                    SerializedProperty pathProp = e.FindPropertyRelative("RendererPath");
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                    {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            DrawObjectPathField(pathProp, root);
-                            if (GUILayout.Button("−", GUILayout.Width(22)))
-                            {
-                                list.DeleteArrayElementAtIndex(i);
-                                return;
-                            }
-                        }
-
-                        DrawShapePopup(e.FindPropertyRelative("ShapeName"), pathProp, root);
-                        EditorGUILayout.Slider(e.FindPropertyRelative("Value"), 0f, 100f, new GUIContent(T.field_value));
-                    }
-                }
-
-                if (GUILayout.Button(T.add_entry)) list.arraySize++;
-            }
-        }
-
-        /// <summary>
-        /// 対象メッシュが実際に持つシェイプ名をドロップダウンで選ばせる。打ち間違いを防ぐため。
-        /// </summary>
-        private static void DrawShapePopup(SerializedProperty nameProp, SerializedProperty pathProp, Transform root)
-        {
-            Transform t = root != null ? AvatarVariantSet.FindByPath(root, pathProp.stringValue) : null;
-            SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
-            Mesh mesh = smr != null ? smr.sharedMesh : null;
-
-            if (mesh == null || mesh.blendShapeCount == 0)
-            {
-                // 選択肢を出せる対象が無いときは、既存の値を編集できるよう素のテキスト欄にする。
-                EditorGUILayout.PropertyField(nameProp, new GUIContent(T.field_shape));
-                return;
-            }
-
-            List<string> names = new List<string>(mesh.blendShapeCount + 1) { T.shape_none };
-            for (int i = 0; i < mesh.blendShapeCount; i++) names.Add(mesh.GetBlendShapeName(i));
-
-            int current = names.IndexOf(nameProp.stringValue);
-            if (current < 0 && !string.IsNullOrEmpty(nameProp.stringValue))
-            {
-                // メッシュに無い名前でも、黙って消さずに見える形で残す。
-                names.Add(nameProp.stringValue + T.shape_missing_suffix);
-                current = names.Count - 1;
-            }
-            else if (current < 0)
-            {
-                current = 0;
-            }
-
-            EditorGUI.BeginChangeCheck();
-            int picked = EditorGUILayout.Popup(T.field_shape, current, names.ToArray());
-            if (EditorGUI.EndChangeCheck())
-            {
-                nameProp.stringValue = picked == 0 ? "" : names[picked];
-            }
-        }
-
-        /// <summary>
-        /// パス文字列を、オブジェクト参照欄のように編集させる。
-        /// アセットからシーンを参照できないので保持はパスだが、操作感は据え置く。
-        /// </summary>
-        private static void DrawObjectPathField(SerializedProperty pathProp, Transform root)
-        {
-            string path = pathProp.stringValue;
-            Transform found = root != null ? AvatarVariantSet.FindByPath(root, path) : null;
-            bool broken = found == null && !string.IsNullOrEmpty(path);
-
-            EditorGUI.BeginChangeCheck();
-            GameObject picked = EditorGUILayout.ObjectField(
-                found != null ? found.gameObject : null, typeof(GameObject), true) as GameObject;
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (picked == null)
-                {
-                    pathProp.stringValue = "";
-                }
-                else
-                {
-                    string newPath = AvatarVariantSet.GetPath(root, picked.transform);
-                    if (string.IsNullOrEmpty(newPath))
-                    {
-                        Debug.LogWarning(string.Format(T.outside_avatar_pick, picked.name));
-                    }
-                    else
-                    {
-                        pathProp.stringValue = newPath;
-                    }
-                }
-            }
-
-            if (!broken) return;
-
-            GUIStyle style = new GUIStyle(EditorStyles.miniLabel);
-            style.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
-            EditorGUILayout.LabelField(string.Format(T.path_broken, path), style);
-        }
-
-        /// <summary>
-        /// 複数まとめてドラッグ＆ドロップで追加できる領域。
-        /// </summary>
-        private static void DrawDropArea(SerializedProperty paths, Transform root)
-        {
-            Rect rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
-            GUI.Box(rect, T.drop_area, EditorStyles.helpBox);
-
-            Event e = Event.current;
-            if (!rect.Contains(e.mousePosition)) return;
-            if (e.type != EventType.DragUpdated && e.type != EventType.DragPerform) return;
-
-            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-            if (e.type != EventType.DragPerform) return;
-
-            DragAndDrop.AcceptDrag();
-            foreach (Object obj in DragAndDrop.objectReferences)
-            {
-                GameObject go = obj as GameObject;
-                if (go == null) continue;
-
-                string path = AvatarVariantSet.GetPath(root, go.transform);
-                if (string.IsNullOrEmpty(path))
-                {
-                    Debug.LogWarning(string.Format(T.outside_avatar_drop, go.name));
-                    continue;
-                }
-
-                paths.arraySize++;
-                paths.GetArrayElementAtIndex(paths.arraySize - 1).stringValue = path;
-            }
-
-            e.Use();
         }
 
         // ---------- ヘッダー ----------
@@ -413,10 +214,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (GUILayout.Button(T.cancel_pending, GUILayout.Width(110)))
             {
-                Undo.RecordObject(set, "Cancel pending variant");
-                set.PendingVariantKey = "";
-                EditorUtility.SetDirty(set);
-                AssetDatabase.SaveAssetIfDirty(set);
+                AvatarVariantSwitcher.CancelPending(set);
             }
 
             EditorGUILayout.Space();
@@ -443,7 +241,7 @@ namespace MinMinMart.AvatarVariant.Editor
                             string label = string.Format(isPending ? T.pending_label : T.mark_new_upload, variant.Name);
                             if (GUILayout.Button(label, GUILayout.Height(26)))
                             {
-                                MarkPending(set, pm, variant);
+                                AvatarVariantSwitcher.MarkPending(set, pm, variant);
                             }
                         }
 
@@ -456,131 +254,21 @@ namespace MinMinMart.AvatarVariant.Editor
                         string label = string.Format(isCurrent ? T.switch_current : T.switch_to, variant.Name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
-                            WriteBlueprintId(pm, variant.BlueprintId);
-                            Debug.Log(string.Format(T.log_switched, variant.Name, variant.BlueprintId));
+                            AvatarVariantSwitcher.SwitchTo(pm, variant);
                         }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// バリアントを新規アップロード対象にする。
-        /// 既存アバターを上書きしないよう、PipelineManager の ID も空にする。
-        /// </summary>
-        private static void MarkPending(AvatarVariantSet set, VRC.Core.PipelineManager pm,
-            AvatarVariantDefinition variant)
-        {
-            Undo.RecordObject(set, "Mark pending variant");
-            if (string.IsNullOrEmpty(variant.Key))
-            {
-                variant.Key = System.Guid.NewGuid().ToString("N");
-            }
-
-            set.PendingVariantKey = variant.Key;
-            EditorUtility.SetDirty(set);
-            AssetDatabase.SaveAssetIfDirty(set);
-
-            if (pm != null && !string.IsNullOrEmpty(pm.blueprintId))
-            {
-                WriteBlueprintId(pm, "");
-            }
-
-            Debug.Log(string.Format(T.log_marked_pending, variant.Name));
-        }
-
-        /// <summary>
-        /// PipelineManager の Blueprint ID を書き換える。
-        /// このフィールドは Inspector に出ないので SerializedProperty 経由で触る。
-        /// </summary>
-        private static void WriteBlueprintId(VRC.Core.PipelineManager pm, string value)
-        {
-            Undo.RecordObject(pm, "Set blueprint ID");
-
-            SerializedObject so = new SerializedObject(pm);
-            SerializedProperty prop = so.FindProperty("blueprintId");
-            if (prop != null)
-            {
-                prop.stringValue = value;
-                so.ApplyModifiedProperties();
-            }
-            else
-            {
-                pm.blueprintId = value;
-            }
-
-            EditorUtility.SetDirty(pm);
-            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(pm.gameObject.scene);
-        }
-
         // ---------- 検証 ----------
 
         private static void DrawWarnings(AvatarVariantSet set, GameObject root)
         {
-            List<string> problems = new List<string>();
-            List<string> ids = set.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
+            List<string> problems = AvatarVariantValidator.CollectProblems(set, root);
+            if (problems.Count == 0) return;
 
-            foreach (AvatarVariantDefinition v in set.Variants.Where(v => v != null))
-            {
-                if (!string.IsNullOrEmpty(v.BlueprintId) && ids.Count(id => id == v.BlueprintId) > 1)
-                {
-                    problems.Add(string.Format(T.warn_duplicate_id, v.BlueprintId));
-                }
-
-                if (root == null) continue;
-                Transform rootT = root.transform;
-
-                foreach (string path in v.RemoveObjectPaths.Where(p => !string.IsNullOrEmpty(p)))
-                {
-                    if (AvatarVariantSet.FindByPath(rootT, path) == null)
-                    {
-                        problems.Add(string.Format(T.warn_remove_missing, v.Name, path));
-                    }
-                }
-
-                foreach (VariantMaterialOverride mo in v.MaterialOverrides.Where(mo => mo != null && !string.IsNullOrEmpty(mo.RendererPath)))
-                {
-                    Transform t = AvatarVariantSet.FindByPath(rootT, mo.RendererPath);
-                    Renderer r = t != null ? t.GetComponent<Renderer>() : null;
-                    if (r == null)
-                    {
-                        problems.Add(string.Format(T.warn_material_missing, v.Name, mo.RendererPath));
-                    }
-                    else if (mo.Slot < 0 || mo.Slot >= r.sharedMaterials.Length)
-                    {
-                        problems.Add(string.Format(T.warn_material_slot,
-                            v.Name, mo.RendererPath, mo.Slot, r.sharedMaterials.Length));
-                    }
-                }
-
-                foreach (VariantBlendShapeChange bs in v.BlendShapeChanges.Where(bs => bs != null && !string.IsNullOrEmpty(bs.RendererPath)))
-                {
-                    Transform t = AvatarVariantSet.FindByPath(rootT, bs.RendererPath);
-                    SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
-                    if (smr == null || smr.sharedMesh == null)
-                    {
-                        problems.Add(string.Format(T.warn_shape_no_renderer, v.Name, bs.RendererPath));
-                    }
-                    else if (string.IsNullOrEmpty(bs.ShapeName))
-                    {
-                        problems.Add(string.Format(T.warn_shape_unselected, v.Name, bs.RendererPath));
-                    }
-                    else if (smr.sharedMesh.GetBlendShapeIndex(bs.ShapeName) < 0)
-                    {
-                        problems.Add(string.Format(T.warn_shape_missing, v.Name, bs.RendererPath, bs.ShapeName));
-                    }
-                }
-            }
-
-            if (set.AllowUnmatchedBlueprintId)
-            {
-                problems.Add(T.warn_allow_unmatched);
-            }
-
-            if (problems.Count > 0)
-            {
-                EditorGUILayout.HelpBox(string.Join("\n", problems), MessageType.Warning);
-            }
+            EditorGUILayout.HelpBox(string.Join("\n", problems), MessageType.Warning);
         }
 
         // ---------- 補助 ----------
@@ -648,42 +336,6 @@ namespace MinMinMart.AvatarVariant.Editor
             nameProp.stringValue = nameProp.stringValue + T.copy_suffix;
             copy.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
             copy.FindPropertyRelative("BlueprintId").stringValue = "";
-        }
-
-        private static void CreateSetAsset(AvatarVariantSelector selector)
-        {
-            string scenePath = selector.gameObject.scene.path;
-            string dir = string.IsNullOrEmpty(scenePath) ? "Assets" : Path.GetDirectoryName(scenePath);
-            string baseName = string.IsNullOrEmpty(scenePath)
-                ? selector.gameObject.name
-                : Path.GetFileNameWithoutExtension(scenePath);
-
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{dir}/{baseName}_Variants.asset");
-            AvatarVariantSet set = ScriptableObject.CreateInstance<AvatarVariantSet>();
-            AssetDatabase.CreateAsset(set, path);
-            AssetDatabase.SaveAssetIfDirty(set);
-
-            Undo.RecordObject(selector, "Assign variant set");
-            selector.Set = set;
-            EditorUtility.SetDirty(selector);
-            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
-
-            Debug.Log(string.Format(T.log_created_asset, path), set);
-        }
-
-        private static GameObject FindAvatarRoot(Transform t)
-        {
-            while (t != null)
-            {
-                if (t.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>() != null)
-                {
-                    return t.gameObject;
-                }
-
-                t = t.parent;
-            }
-
-            return null;
         }
     }
 }
