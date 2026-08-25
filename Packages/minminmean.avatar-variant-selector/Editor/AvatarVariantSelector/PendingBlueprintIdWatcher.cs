@@ -33,7 +33,7 @@ namespace MinMinMart.AvatarVariant.Editor
             if (EditorApplication.timeSinceStartup < _nextCheck) return;
             _nextCheck = EditorApplication.timeSinceStartup + IntervalSeconds;
 
-            foreach (var selector in Object.FindObjectsOfType<AvatarVariantSelector>(true))
+            foreach (AvatarVariantSelector selector in Object.FindObjectsOfType<AvatarVariantSelector>(true))
             {
                 TryWriteBack(selector);
             }
@@ -43,11 +43,11 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             if (selector == null || selector.Set == null) return;
 
-            var set = selector.Set;
-            var pending = set.PendingVariant;
+            AvatarVariantSet set = selector.Set;
+            AvatarVariantDefinition pending = set.PendingVariant;
             if (pending == null) return;
 
-            var pm = FindPipelineManager(selector);
+            VRC.Core.PipelineManager pm = FindPipelineManager(selector);
             if (pm == null || string.IsNullOrEmpty(pm.blueprintId)) return;
 
             // 他のバリアントが既に使っている ID なら、採番されたものではないので触らない。
@@ -67,7 +67,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         internal static VRC.Core.PipelineManager FindPipelineManager(AvatarVariantSelector selector)
         {
-            var t = selector.transform;
+            Transform t = selector.transform;
             while (t != null)
             {
                 if (t.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>() != null)

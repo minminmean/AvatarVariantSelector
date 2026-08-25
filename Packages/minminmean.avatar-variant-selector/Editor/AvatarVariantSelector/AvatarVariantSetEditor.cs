@@ -17,7 +17,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public override void OnInspectorGUI()
         {
-            var set = (AvatarVariantSet)target;
+            AvatarVariantSet set = (AvatarVariantSet)target;
 
             AvatarVariantLocalize.DrawLanguagePopup();
             EditorGUILayout.Space();
@@ -34,7 +34,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.DisabledScope(true))
             {
-                foreach (var v in set.Variants)
+                foreach (AvatarVariantDefinition v in set.Variants)
                 {
                     if (v == null) continue;
 
@@ -51,7 +51,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
             }
 
-            var pending = set.PendingVariant;
+            AvatarVariantDefinition pending = set.PendingVariant;
             if (pending != null)
             {
                 EditorGUILayout.HelpBox(string.Format(T.asset_pending, pending.Name), MessageType.Info);
@@ -60,7 +60,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void SelectUser(AvatarVariantSet set)
         {
-            foreach (var selector in Object.FindObjectsOfType<AvatarVariantSelector>(true))
+            foreach (AvatarVariantSelector selector in Object.FindObjectsOfType<AvatarVariantSelector>(true))
             {
                 if (selector.Set != set) continue;
 

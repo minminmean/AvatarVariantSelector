@@ -22,9 +22,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public override void OnInspectorGUI()
         {
-            var selector = (AvatarVariantSelector)target;
-            var root = FindAvatarRoot(selector.transform);
-            var pm = root != null ? root.GetComponent<VRC.Core.PipelineManager>() : null;
+            AvatarVariantSelector selector = (AvatarVariantSelector)target;
+            GameObject root = FindAvatarRoot(selector.transform);
+            VRC.Core.PipelineManager pm = root != null ? root.GetComponent<VRC.Core.PipelineManager>() : null;
 
             AvatarVariantLocalize.DrawLanguagePopup();
             EditorGUILayout.Space();
@@ -46,8 +46,8 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            var set = selector.Set;
-            var setSo = new SerializedObject(set);
+            AvatarVariantSet set = selector.Set;
+            SerializedObject setSo = new SerializedObject(set);
             setSo.Update();
 
             DrawStatus(set, root, pm);
@@ -76,15 +76,15 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void DrawVariants(SerializedObject setSo, GameObject root, VRC.Core.PipelineManager pm)
         {
-            var variants = setSo.FindProperty("Variants");
+            SerializedProperty variants = setSo.FindProperty("Variants");
             EditorGUILayout.LabelField(string.Format(T.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
-            for (var i = 0; i < variants.arraySize; i++)
+            for (int i = 0; i < variants.arraySize; i++)
             {
-                var variant = variants.GetArrayElementAtIndex(i);
-                var nameProp = variant.FindPropertyRelative("Name");
-                var idProp = variant.FindPropertyRelative("BlueprintId");
-                var isCurrent = pm != null
+                SerializedProperty variant = variants.GetArrayElementAtIndex(i);
+                SerializedProperty nameProp = variant.FindPropertyRelative("Name");
+                SerializedProperty idProp = variant.FindPropertyRelative("BlueprintId");
+                bool isCurrent = pm != null
                                 && !string.IsNullOrEmpty(idProp.stringValue)
                                 && idProp.stringValue == pm.blueprintId;
 
@@ -92,31 +92,31 @@ namespace MinMinMart.AvatarVariant.Editor
                 {
                     // 1 バリアント = 1 行。レイアウト要素を並べるとインデントと余白でズレるので、
                     // 行ぶんの矩形を 1 つ取って自前で分割する。
-                    var row = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
-                    var indent = EditorGUI.indentLevel;
+                    Rect row = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+                    int indent = EditorGUI.indentLevel;
                     EditorGUI.indentLevel = 0;
 
-                    var x = row.x;
-                    var foldRect = new Rect(x, row.y, FoldoutWidth, row.height);
+                    float x = row.x;
+                    Rect foldRect = new Rect(x, row.y, FoldoutWidth, row.height);
                     x += FoldoutWidth;
-                    var markRect = new Rect(x, row.y, MarkerWidth, row.height);
+                    Rect markRect = new Rect(x, row.y, MarkerWidth, row.height);
                     x += MarkerWidth;
 
-                    var delRect = new Rect(row.xMax - ButtonWidth, row.y, ButtonWidth, row.height);
-                    var dupRect = new Rect(delRect.x - ButtonWidth - 2f, row.y, ButtonWidth, row.height);
+                    Rect delRect = new Rect(row.xMax - ButtonWidth, row.y, ButtonWidth, row.height);
+                    Rect dupRect = new Rect(delRect.x - ButtonWidth - 2f, row.y, ButtonWidth, row.height);
 
-                    var fieldsWidth = dupRect.x - Gap - x;
-                    var nameWidth = Mathf.Max(70f, fieldsWidth * NameFieldRatio);
-                    var nameRect = new Rect(x, row.y, nameWidth, row.height);
-                    var idRect = new Rect(x + nameWidth + Gap, row.y, fieldsWidth - nameWidth - Gap, row.height);
+                    float fieldsWidth = dupRect.x - Gap - x;
+                    float nameWidth = Mathf.Max(70f, fieldsWidth * NameFieldRatio);
+                    Rect nameRect = new Rect(x, row.y, nameWidth, row.height);
+                    Rect idRect = new Rect(x + nameWidth + Gap, row.y, fieldsWidth - nameWidth - Gap, row.height);
 
                     variant.isExpanded = EditorGUI.Foldout(foldRect, variant.isExpanded, GUIContent.none, true);
                     DrawCurrentMarker(markRect, isCurrent);
                     DrawFieldWithPlaceholder(nameRect, nameProp, T.placeholder_name);
                     DrawFieldWithPlaceholder(idRect, idProp, T.placeholder_id);
 
-                    var duplicate = GUI.Button(dupRect, T.duplicate);
-                    var delete = GUI.Button(delRect, T.delete);
+                    bool duplicate = GUI.Button(dupRect, T.duplicate);
+                    bool delete = GUI.Button(delRect, T.delete);
                     EditorGUI.indentLevel = indent;
 
                     if (duplicate)
@@ -127,7 +127,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
                     if (delete)
                     {
-                        var title = string.IsNullOrEmpty(nameProp.stringValue)
+                        string title = string.IsNullOrEmpty(nameProp.stringValue)
                             ? string.Format(T.variant_unnamed, i)
                             : nameProp.stringValue;
 
@@ -145,7 +145,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     EditorGUILayout.Space(2);
                     EditorGUILayout.LabelField(T.operations_header, EditorStyles.miniBoldLabel);
 
-                    var rootT = root != null ? root.transform : null;
+                    Transform rootT = root != null ? root.transform : null;
                     DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), rootT);
                     DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), rootT);
                     DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), rootT);
@@ -168,7 +168,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.IndentLevelScope())
             {
-                for (var i = 0; i < paths.arraySize; i++)
+                for (int i = 0; i < paths.arraySize; i++)
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
@@ -193,9 +193,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.IndentLevelScope())
             {
-                for (var i = 0; i < list.arraySize; i++)
+                for (int i = 0; i < list.arraySize; i++)
                 {
-                    var e = list.GetArrayElementAtIndex(i);
+                    SerializedProperty e = list.GetArrayElementAtIndex(i);
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
                         using (new EditorGUILayout.HorizontalScope())
@@ -225,10 +225,10 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.IndentLevelScope())
             {
-                for (var i = 0; i < list.arraySize; i++)
+                for (int i = 0; i < list.arraySize; i++)
                 {
-                    var e = list.GetArrayElementAtIndex(i);
-                    var pathProp = e.FindPropertyRelative("RendererPath");
+                    SerializedProperty e = list.GetArrayElementAtIndex(i);
+                    SerializedProperty pathProp = e.FindPropertyRelative("RendererPath");
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
                         using (new EditorGUILayout.HorizontalScope())
@@ -255,9 +255,9 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void DrawShapePopup(SerializedProperty nameProp, SerializedProperty pathProp, Transform root)
         {
-            var t = root != null ? AvatarVariantSet.FindByPath(root, pathProp.stringValue) : null;
-            var smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
-            var mesh = smr != null ? smr.sharedMesh : null;
+            Transform t = root != null ? AvatarVariantSet.FindByPath(root, pathProp.stringValue) : null;
+            SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
+            Mesh mesh = smr != null ? smr.sharedMesh : null;
 
             if (mesh == null || mesh.blendShapeCount == 0)
             {
@@ -266,10 +266,10 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            var names = new List<string>(mesh.blendShapeCount + 1) { T.shape_none };
-            for (var i = 0; i < mesh.blendShapeCount; i++) names.Add(mesh.GetBlendShapeName(i));
+            List<string> names = new List<string>(mesh.blendShapeCount + 1) { T.shape_none };
+            for (int i = 0; i < mesh.blendShapeCount; i++) names.Add(mesh.GetBlendShapeName(i));
 
-            var current = names.IndexOf(nameProp.stringValue);
+            int current = names.IndexOf(nameProp.stringValue);
             if (current < 0 && !string.IsNullOrEmpty(nameProp.stringValue))
             {
                 // メッシュに無い名前でも、黙って消さずに見える形で残す。
@@ -282,7 +282,7 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             EditorGUI.BeginChangeCheck();
-            var picked = EditorGUILayout.Popup(T.field_shape, current, names.ToArray());
+            int picked = EditorGUILayout.Popup(T.field_shape, current, names.ToArray());
             if (EditorGUI.EndChangeCheck())
             {
                 nameProp.stringValue = picked == 0 ? "" : names[picked];
@@ -295,12 +295,12 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void DrawObjectPathField(SerializedProperty pathProp, Transform root)
         {
-            var path = pathProp.stringValue;
-            var found = root != null ? AvatarVariantSet.FindByPath(root, path) : null;
-            var broken = found == null && !string.IsNullOrEmpty(path);
+            string path = pathProp.stringValue;
+            Transform found = root != null ? AvatarVariantSet.FindByPath(root, path) : null;
+            bool broken = found == null && !string.IsNullOrEmpty(path);
 
             EditorGUI.BeginChangeCheck();
-            var picked = EditorGUILayout.ObjectField(
+            GameObject picked = EditorGUILayout.ObjectField(
                 found != null ? found.gameObject : null, typeof(GameObject), true) as GameObject;
 
             if (EditorGUI.EndChangeCheck())
@@ -311,7 +311,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
                 else
                 {
-                    var newPath = AvatarVariantSet.GetPath(root, picked.transform);
+                    string newPath = AvatarVariantSet.GetPath(root, picked.transform);
                     if (string.IsNullOrEmpty(newPath))
                     {
                         Debug.LogWarning(string.Format(T.outside_avatar_pick, picked.name));
@@ -325,7 +325,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (!broken) return;
 
-            var style = new GUIStyle(EditorStyles.miniLabel);
+            GUIStyle style = new GUIStyle(EditorStyles.miniLabel);
             style.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
             EditorGUILayout.LabelField(string.Format(T.path_broken, path), style);
         }
@@ -335,10 +335,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void DrawDropArea(SerializedProperty paths, Transform root)
         {
-            var rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
+            Rect rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
             GUI.Box(rect, T.drop_area, EditorStyles.helpBox);
 
-            var e = Event.current;
+            Event e = Event.current;
             if (!rect.Contains(e.mousePosition)) return;
             if (e.type != EventType.DragUpdated && e.type != EventType.DragPerform) return;
 
@@ -346,12 +346,12 @@ namespace MinMinMart.AvatarVariant.Editor
             if (e.type != EventType.DragPerform) return;
 
             DragAndDrop.AcceptDrag();
-            foreach (var obj in DragAndDrop.objectReferences)
+            foreach (Object obj in DragAndDrop.objectReferences)
             {
-                var go = obj as GameObject;
+                GameObject go = obj as GameObject;
                 if (go == null) continue;
 
-                var path = AvatarVariantSet.GetPath(root, go.transform);
+                string path = AvatarVariantSet.GetPath(root, go.transform);
                 if (string.IsNullOrEmpty(path))
                 {
                     Debug.LogWarning(string.Format(T.outside_avatar_drop, go.name));
@@ -381,8 +381,8 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            var current = set.ResolveForBuild(pm.blueprintId, out var viaPending);
-            var style = new GUIStyle(EditorStyles.helpBox)
+            AvatarVariantDefinition current = set.ResolveForBuild(pm.blueprintId, out bool viaPending);
+            GUIStyle style = new GUIStyle(EditorStyles.helpBox)
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
@@ -393,7 +393,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 ? new Color(0.35f, 0.75f, 0.35f)
                 : new Color(0.9f, 0.5f, 0.3f);
 
-            var caption = current == null
+            string caption = current == null
                 ? T.build_target_none
                 : string.Format(viaPending ? T.build_target_new : T.build_target, current.Name);
 
@@ -406,7 +406,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void DrawPendingBanner(AvatarVariantSet set)
         {
-            var pending = set.PendingVariant;
+            AvatarVariantDefinition pending = set.PendingVariant;
             if (pending == null) return;
 
             EditorGUILayout.HelpBox(string.Format(T.pending_banner, pending.Name), MessageType.Info);
@@ -430,17 +430,17 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
-                foreach (var variant in set.Variants)
+                foreach (AvatarVariantDefinition variant in set.Variants)
                 {
                     if (variant == null) continue;
 
                     // ID が未採番のバリアントは、切り替えではなく新規アップロードの対象として選ぶ。
                     if (string.IsNullOrEmpty(variant.BlueprintId))
                     {
-                        var isPending = set.PendingVariant == variant;
+                        bool isPending = set.PendingVariant == variant;
                         using (new EditorGUI.DisabledScope(isPending))
                         {
-                            var label = string.Format(isPending ? T.pending_label : T.mark_new_upload, variant.Name);
+                            string label = string.Format(isPending ? T.pending_label : T.mark_new_upload, variant.Name);
                             if (GUILayout.Button(label, GUILayout.Height(26)))
                             {
                                 MarkPending(set, pm, variant);
@@ -450,10 +450,10 @@ namespace MinMinMart.AvatarVariant.Editor
                         continue;
                     }
 
-                    var isCurrent = variant.BlueprintId == pm.blueprintId;
+                    bool isCurrent = variant.BlueprintId == pm.blueprintId;
                     using (new EditorGUI.DisabledScope(isCurrent))
                     {
-                        var label = string.Format(isCurrent ? T.switch_current : T.switch_to, variant.Name);
+                        string label = string.Format(isCurrent ? T.switch_current : T.switch_to, variant.Name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
                             WriteBlueprintId(pm, variant.BlueprintId);
@@ -497,8 +497,8 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             Undo.RecordObject(pm, "Set blueprint ID");
 
-            var so = new SerializedObject(pm);
-            var prop = so.FindProperty("blueprintId");
+            SerializedObject so = new SerializedObject(pm);
+            SerializedProperty prop = so.FindProperty("blueprintId");
             if (prop != null)
             {
                 prop.stringValue = value;
@@ -517,10 +517,10 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void DrawWarnings(AvatarVariantSet set, GameObject root)
         {
-            var problems = new List<string>();
-            var ids = set.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
+            List<string> problems = new List<string>();
+            List<string> ids = set.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
 
-            foreach (var v in set.Variants.Where(v => v != null))
+            foreach (AvatarVariantDefinition v in set.Variants.Where(v => v != null))
             {
                 if (!string.IsNullOrEmpty(v.BlueprintId) && ids.Count(id => id == v.BlueprintId) > 1)
                 {
@@ -528,9 +528,9 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
 
                 if (root == null) continue;
-                var rootT = root.transform;
+                Transform rootT = root.transform;
 
-                foreach (var path in v.RemoveObjectPaths.Where(p => !string.IsNullOrEmpty(p)))
+                foreach (string path in v.RemoveObjectPaths.Where(p => !string.IsNullOrEmpty(p)))
                 {
                     if (AvatarVariantSet.FindByPath(rootT, path) == null)
                     {
@@ -538,10 +538,10 @@ namespace MinMinMart.AvatarVariant.Editor
                     }
                 }
 
-                foreach (var mo in v.MaterialOverrides.Where(mo => mo != null && !string.IsNullOrEmpty(mo.RendererPath)))
+                foreach (VariantMaterialOverride mo in v.MaterialOverrides.Where(mo => mo != null && !string.IsNullOrEmpty(mo.RendererPath)))
                 {
-                    var t = AvatarVariantSet.FindByPath(rootT, mo.RendererPath);
-                    var r = t != null ? t.GetComponent<Renderer>() : null;
+                    Transform t = AvatarVariantSet.FindByPath(rootT, mo.RendererPath);
+                    Renderer r = t != null ? t.GetComponent<Renderer>() : null;
                     if (r == null)
                     {
                         problems.Add(string.Format(T.warn_material_missing, v.Name, mo.RendererPath));
@@ -553,10 +553,10 @@ namespace MinMinMart.AvatarVariant.Editor
                     }
                 }
 
-                foreach (var bs in v.BlendShapeChanges.Where(bs => bs != null && !string.IsNullOrEmpty(bs.RendererPath)))
+                foreach (VariantBlendShapeChange bs in v.BlendShapeChanges.Where(bs => bs != null && !string.IsNullOrEmpty(bs.RendererPath)))
                 {
-                    var t = AvatarVariantSet.FindByPath(rootT, bs.RendererPath);
-                    var smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
+                    Transform t = AvatarVariantSet.FindByPath(rootT, bs.RendererPath);
+                    SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
                     if (smr == null || smr.sharedMesh == null)
                     {
                         problems.Add(string.Format(T.warn_shape_no_renderer, v.Name, bs.RendererPath));
@@ -589,7 +589,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             if (!isCurrent) return;
 
-            var style = new GUIStyle(EditorStyles.label)
+            GUIStyle style = new GUIStyle(EditorStyles.label)
             {
                 alignment = TextAnchor.MiddleCenter,
                 padding = new RectOffset(0, 0, 0, 0),
@@ -603,7 +603,7 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUI.PropertyField(rect, prop, GUIContent.none);
             if (!string.IsNullOrEmpty(prop.stringValue)) return;
 
-            var style = new GUIStyle(EditorStyles.label)
+            GUIStyle style = new GUIStyle(EditorStyles.label)
             {
                 fontStyle = FontStyle.Italic,
                 padding = new RectOffset(2, 2, 0, 0),
@@ -621,10 +621,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void AddBlankVariant(SerializedProperty variants)
         {
-            var index = variants.arraySize;
+            int index = variants.arraySize;
             variants.arraySize++;
 
-            var v = variants.GetArrayElementAtIndex(index);
+            SerializedProperty v = variants.GetArrayElementAtIndex(index);
             v.isExpanded = false;
             v.FindPropertyRelative("Name").stringValue = "";
             v.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
@@ -642,9 +642,9 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             variants.InsertArrayElementAtIndex(index);
 
-            var copy = variants.GetArrayElementAtIndex(index + 1);
+            SerializedProperty copy = variants.GetArrayElementAtIndex(index + 1);
             copy.isExpanded = false;
-            var nameProp = copy.FindPropertyRelative("Name");
+            SerializedProperty nameProp = copy.FindPropertyRelative("Name");
             nameProp.stringValue = nameProp.stringValue + T.copy_suffix;
             copy.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
             copy.FindPropertyRelative("BlueprintId").stringValue = "";
@@ -652,14 +652,14 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void CreateSetAsset(AvatarVariantSelector selector)
         {
-            var scenePath = selector.gameObject.scene.path;
-            var dir = string.IsNullOrEmpty(scenePath) ? "Assets" : Path.GetDirectoryName(scenePath);
-            var baseName = string.IsNullOrEmpty(scenePath)
+            string scenePath = selector.gameObject.scene.path;
+            string dir = string.IsNullOrEmpty(scenePath) ? "Assets" : Path.GetDirectoryName(scenePath);
+            string baseName = string.IsNullOrEmpty(scenePath)
                 ? selector.gameObject.name
                 : Path.GetFileNameWithoutExtension(scenePath);
 
-            var path = AssetDatabase.GenerateUniqueAssetPath($"{dir}/{baseName}_Variants.asset");
-            var set = ScriptableObject.CreateInstance<AvatarVariantSet>();
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{dir}/{baseName}_Variants.asset");
+            AvatarVariantSet set = ScriptableObject.CreateInstance<AvatarVariantSet>();
             AssetDatabase.CreateAsset(set, path);
             AssetDatabase.SaveAssetIfDirty(set);
 

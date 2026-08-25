@@ -87,7 +87,7 @@ namespace MinMinMart.AvatarVariant
         public AvatarVariantDefinition Resolve(string blueprintId)
         {
             if (string.IsNullOrEmpty(blueprintId)) return null;
-            foreach (var v in Variants)
+            foreach (AvatarVariantDefinition v in Variants)
             {
                 if (v != null && v.BlueprintId == blueprintId) return v;
             }
@@ -103,7 +103,7 @@ namespace MinMinMart.AvatarVariant
             get
             {
                 if (string.IsNullOrEmpty(PendingVariantKey)) return null;
-                foreach (var v in Variants)
+                foreach (AvatarVariantDefinition v in Variants)
                 {
                     if (v != null && !string.IsNullOrEmpty(v.Key) && v.Key == PendingVariantKey) return v;
                 }
@@ -123,11 +123,11 @@ namespace MinMinMart.AvatarVariant
         {
             viaPending = false;
 
-            var byId = Resolve(blueprintId);
+            AvatarVariantDefinition byId = Resolve(blueprintId);
             if (byId != null) return byId;
             if (!string.IsNullOrEmpty(blueprintId)) return null;
 
-            var pending = PendingVariant;
+            AvatarVariantDefinition pending = PendingVariant;
             if (pending == null) return null;
 
             viaPending = true;
@@ -144,8 +144,8 @@ namespace MinMinMart.AvatarVariant
         {
             if (root == null || target == null || target == root) return "";
 
-            var parts = new List<string>();
-            var t = target;
+            List<string> parts = new List<string>();
+            Transform t = target;
             while (t != null && t != root)
             {
                 parts.Add(t.name);

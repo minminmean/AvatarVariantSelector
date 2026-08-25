@@ -40,8 +40,8 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void Apply(BuildContext ctx)
         {
-            var root = ctx.AvatarRootObject;
-            var selectors = root.GetComponentsInChildren<AvatarVariantSelector>(true);
+            GameObject root = ctx.AvatarRootObject;
+            AvatarVariantSelector[] selectors = root.GetComponentsInChildren<AvatarVariantSelector>(true);
             if (selectors.Length == 0) return;
 
             if (selectors.Length > 1)
@@ -49,26 +49,26 @@ namespace MinMinMart.AvatarVariant.Editor
                 throw new System.Exception(string.Format(T.build_multiple_selectors, root.name, selectors.Length));
             }
 
-            var selector = selectors[0];
-            var set = selector.Set;
+            AvatarVariantSelector selector = selectors[0];
+            AvatarVariantSet set = selector.Set;
 
             if (set == null)
             {
                 throw new System.Exception(string.Format(T.build_no_set, root.name));
             }
 
-            var blueprintId = GetBlueprintId(root);
-            var variant = set.ResolveForBuild(blueprintId, out var viaPending);
+            string blueprintId = GetBlueprintId(root);
+            AvatarVariantDefinition variant = set.ResolveForBuild(blueprintId, out bool viaPending);
 
             if (variant == null)
             {
                 if (!set.AllowUnmatchedBlueprintId)
                 {
-                    var known = set.Variants
+                    IEnumerable<string> known = set.Variants
                         .Where(v => v != null)
                         .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? T.blueprint_id_unassigned : v.BlueprintId)}");
 
-                    var hint = string.IsNullOrEmpty(blueprintId) ? T.build_hint_new : T.build_hint_switch;
+                    string hint = string.IsNullOrEmpty(blueprintId) ? T.build_hint_new : T.build_hint_switch;
 
                     throw new System.Exception(string.Format(T.build_cannot_resolve,
                         string.IsNullOrEmpty(blueprintId) ? T.blueprint_id_unassigned : blueprintId,
@@ -89,7 +89,7 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             // ビルド成果物に残さない。
-            foreach (var s in selectors)
+            foreach (AvatarVariantSelector s in selectors)
             {
                 Object.DestroyImmediate(s);
             }
@@ -99,13 +99,13 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             // 削除 → マテリアル → ブレンドシェイプ の順に適用する。
             // パスはビルド用コピーのルートを基準に引くので、実シーンに触れることは無い。
-            var removedPaths = new List<string>();
+            List<string> removedPaths = new List<string>();
 
-            foreach (var path in variant.RemoveObjectPaths)
+            foreach (string path in variant.RemoveObjectPaths)
             {
                 if (string.IsNullOrEmpty(path)) continue;
 
-                var target = AvatarVariantSet.FindByPath(root.transform, path);
+                Transform target = AvatarVariantSet.FindByPath(root.transform, path);
                 if (target != null)
                 {
                     Object.DestroyImmediate(target.gameObject);
@@ -122,14 +122,14 @@ namespace MinMinMart.AvatarVariant.Editor
                 throw new System.Exception(string.Format(T.build_remove_missing, variant.Name, path));
             }
 
-            foreach (var mo in variant.MaterialOverrides)
+            foreach (VariantMaterialOverride mo in variant.MaterialOverrides)
             {
                 if (mo == null || string.IsNullOrEmpty(mo.RendererPath) || mo.Material == null) continue;
 
-                var renderer = ResolveRenderer(root, mo.RendererPath, variant.Name, removedPaths);
+                Renderer renderer = ResolveRenderer(root, mo.RendererPath, variant.Name, removedPaths);
                 if (renderer == null) continue;
 
-                var mats = renderer.sharedMaterials;
+                Material[] mats = renderer.sharedMaterials;
                 if (mo.Slot < 0 || mo.Slot >= mats.Length)
                 {
                     throw new System.Exception(string.Format(T.build_slot_out_of_range,
@@ -140,15 +140,15 @@ namespace MinMinMart.AvatarVariant.Editor
                 renderer.sharedMaterials = mats;
             }
 
-            foreach (var bs in variant.BlendShapeChanges)
+            foreach (VariantBlendShapeChange bs in variant.BlendShapeChanges)
             {
                 if (bs == null || string.IsNullOrEmpty(bs.RendererPath) || string.IsNullOrEmpty(bs.ShapeName)) continue;
 
-                var renderer = ResolveRenderer(root, bs.RendererPath, variant.Name, removedPaths) as SkinnedMeshRenderer;
+                SkinnedMeshRenderer renderer = ResolveRenderer(root, bs.RendererPath, variant.Name, removedPaths) as SkinnedMeshRenderer;
                 if (renderer == null) continue;
 
-                var mesh = renderer.sharedMesh;
-                var index = mesh != null ? mesh.GetBlendShapeIndex(bs.ShapeName) : -1;
+                Mesh mesh = renderer.sharedMesh;
+                int index = mesh != null ? mesh.GetBlendShapeIndex(bs.ShapeName) : -1;
                 if (index < 0)
                 {
                     throw new System.Exception(string.Format(T.build_shape_missing,
@@ -169,7 +169,7 @@ namespace MinMinMart.AvatarVariant.Editor
         private static Renderer ResolveRenderer(GameObject root, string path, string variantName,
             List<string> removedPaths)
         {
-            var t = AvatarVariantSet.FindByPath(root.transform, path);
+            Transform t = AvatarVariantSet.FindByPath(root.transform, path);
             if (t == null)
             {
                 if (removedPaths.Any(p => path == p || path.StartsWith(p + "/"))) return null;
@@ -177,7 +177,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 throw new System.Exception(string.Format(T.build_target_missing, variantName, path));
             }
 
-            var renderer = t.GetComponent<Renderer>();
+            Renderer renderer = t.GetComponent<Renderer>();
             if (renderer == null)
             {
                 throw new System.Exception(string.Format(T.build_no_renderer, variantName, path));
@@ -188,7 +188,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static string GetBlueprintId(GameObject root)
         {
-            var pm = root.GetComponent<VRC.Core.PipelineManager>();
+            VRC.Core.PipelineManager pm = root.GetComponent<VRC.Core.PipelineManager>();
             return pm != null ? pm.blueprintId : null;
         }
     }

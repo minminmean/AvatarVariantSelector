@@ -125,7 +125,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             get
             {
-                var fallback = Application.systemLanguage == SystemLanguage.Japanese ? 0 : 1;
+                int fallback = Application.systemLanguage == SystemLanguage.Japanese ? 0 : 1;
                 return Mathf.Clamp(EditorPrefs.GetInt(LanguagePrefKey, fallback), 0, LocalizeFiles.Length - 1);
             }
 
@@ -144,7 +144,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             get
             {
-                var index = LanguageIndex;
+                int index = LanguageIndex;
                 if (_cachedIndex == index) return _cached;
 
                 _cached = Load(index);
@@ -159,7 +159,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public static void DrawLanguagePopup()
         {
             EditorGUI.BeginChangeCheck();
-            var picked = EditorGUILayout.Popup(T.language, LanguageIndex, LanguageNames);
+            int picked = EditorGUILayout.Popup(T.language, LanguageIndex, LanguageNames);
             if (EditorGUI.EndChangeCheck())
             {
                 LanguageIndex = picked;
@@ -168,14 +168,14 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static AvatarVariantLocalizeDictionary Load(int index)
         {
-            var folder = FindLocalizeFolder();
+            string folder = FindLocalizeFolder();
             if (folder == null)
             {
                 Debug.LogError("[Avatar Variant] Localize folder not found.");
                 return default;
             }
 
-            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>($"{folder}/{LocalizeFiles[index]}");
+            TextAsset asset = AssetDatabase.LoadAssetAtPath<TextAsset>($"{folder}/{LocalizeFiles[index]}");
             if (asset == null)
             {
                 Debug.LogError($"[Avatar Variant] Failed to load {folder}/{LocalizeFiles[index]}.");
@@ -191,18 +191,18 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static string FindLocalizeFolder()
         {
-            var scriptPath = AssetDatabase.FindAssets($"t:MonoScript {nameof(AvatarVariantLocalize)}")
+            string scriptPath = AssetDatabase.FindAssets($"t:MonoScript {nameof(AvatarVariantLocalize)}")
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == nameof(AvatarVariantLocalize));
 
             if (string.IsNullOrEmpty(scriptPath)) return null;
 
-            var scriptDir = Path.GetDirectoryName(scriptPath);
-            foreach (var dir in new[] { scriptDir, Path.GetDirectoryName(scriptDir) })
+            string scriptDir = Path.GetDirectoryName(scriptPath);
+            foreach (string dir in new string[] { scriptDir, Path.GetDirectoryName(scriptDir) })
             {
                 if (string.IsNullOrEmpty(dir)) continue;
 
-                var candidate = (dir + "/Localize").Replace('\\', '/');
+                string candidate = (dir + "/Localize").Replace('\\', '/');
                 if (AssetDatabase.IsValidFolder(candidate)) return candidate;
             }
 
