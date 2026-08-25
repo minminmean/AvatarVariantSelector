@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -172,17 +173,39 @@ namespace MinMinMart.AvatarVariant.Editor
             if (folder == null)
             {
                 Debug.LogError("[Avatar Variant] Localize folder not found.");
-                return default;
+                return FillMissingStrings(default);
             }
 
             TextAsset asset = AssetDatabase.LoadAssetAtPath<TextAsset>($"{folder}/{LocalizeFiles[index]}");
             if (asset == null)
             {
                 Debug.LogError($"[Avatar Variant] Failed to load {folder}/{LocalizeFiles[index]}.");
-                return default;
+                return FillMissingStrings(default);
             }
 
-            return JsonUtility.FromJson<AvatarVariantLocalizeDictionary>(asset.text);
+            return FillMissingStrings(JsonUtility.FromJson<AvatarVariantLocalizeDictionary>(asset.text));
+        }
+
+        /// <summary>
+        /// 値が入らなかったフィールドを空文字で埋める。
+        ///
+        /// 辞書は構造体なので、読み込みに失敗すると全フィールドが null になる。
+        /// そのまま string.Format に渡すと例外になり、Inspector が描けなくなる。
+        /// キーが 1 つ欠けただけの場合も同じなので、読み込み経路の最後で必ず通す。
+        /// </summary>
+        private static AvatarVariantLocalizeDictionary FillMissingStrings(AvatarVariantLocalizeDictionary dictionary)
+        {
+            // 構造体なのでボックス化しないとリフレクションで書き戻せない。
+            object boxed = dictionary;
+            foreach (FieldInfo field in typeof(AvatarVariantLocalizeDictionary).GetFields())
+            {
+                if (field.FieldType != typeof(string)) continue;
+                if (field.GetValue(boxed) != null) continue;
+
+                field.SetValue(boxed, "");
+            }
+
+            return (AvatarVariantLocalizeDictionary)boxed;
         }
 
         /// <summary>
