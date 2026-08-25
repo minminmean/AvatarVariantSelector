@@ -17,7 +17,7 @@ namespace MinMinMart.AvatarVariant
     [DisallowMultipleComponent]
     public class AvatarVariantSelector : MonoBehaviour, VRC.SDKBase.IEditorOnly
     {
-        [Tooltip("バリアント設定アセット。設定はここに保存されるので、シーンを保存しなくても失われない。")]
+        // バリアント設定アセット。設定はここに保存されるので、シーンを保存しなくても失われない。
         public AvatarVariantSet Set;
     }
 }

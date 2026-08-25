@@ -171,14 +171,14 @@ namespace MinMinMart.AvatarVariant.Editor
             var folder = FindLocalizeFolder();
             if (folder == null)
             {
-                Debug.LogError("[Avatar Variant] Localize フォルダが見つかりません。");
+                Debug.LogError("[Avatar Variant] Localize folder not found.");
                 return default;
             }
 
             var asset = AssetDatabase.LoadAssetAtPath<TextAsset>($"{folder}/{LocalizeFiles[index]}");
             if (asset == null)
             {
-                Debug.LogError($"[Avatar Variant] {folder}/{LocalizeFiles[index]} を読み込めません。");
+                Debug.LogError($"[Avatar Variant] Failed to load {folder}/{LocalizeFiles[index]}.");
                 return default;
             }
 

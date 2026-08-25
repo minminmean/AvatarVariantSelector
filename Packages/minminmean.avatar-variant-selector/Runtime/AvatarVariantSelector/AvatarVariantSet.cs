@@ -10,7 +10,7 @@ namespace MinMinMart.AvatarVariant
     [Serializable]
     public class VariantMaterialOverride
     {
-        [Tooltip("アバタールートからの相対パス。")]
+        // アバタールートからの相対パス。
         public string RendererPath = "";
 
         public int Slot;
@@ -23,7 +23,7 @@ namespace MinMinMart.AvatarVariant
     [Serializable]
     public class VariantBlendShapeChange
     {
-        [Tooltip("アバタールートからの相対パス。")]
+        // アバタールートからの相対パス。
         public string RendererPath = "";
 
         public string ShapeName = "";
@@ -40,22 +40,22 @@ namespace MinMinMart.AvatarVariant
     [Serializable]
     public class AvatarVariantDefinition
     {
-        [Tooltip("表示用の名前。自由に付けてよい。ビルド対象の判定には使わない。")]
+        // 表示用の名前。自由に付けてよい。ビルド対象の判定には使わない。
         public string Name = "";
 
         // 並び替えや改名に影響されない内部用の識別子。新規アップロード待ちの指定に使う。
         [HideInInspector] public string Key = "";
 
-        [Tooltip("アバターの Blueprint ID がこの値と一致したとき、このバリアントがビルドされる。")]
+        // アバターの Blueprint ID がこの値と一致したとき、このバリアントがビルドされる。
         public string BlueprintId = "";
 
-        [Tooltip("このバリアントのビルドから削除するオブジェクト。アバタールートからの相対パス。")]
+        // このバリアントのビルドから削除するオブジェクト。アバタールートからの相対パス。
         public List<string> RemoveObjectPaths = new List<string>();
 
-        [Tooltip("このバリアントのビルドで差し替えるマテリアルスロット。")]
+        // このバリアントのビルドで差し替えるマテリアルスロット。
         public List<VariantMaterialOverride> MaterialOverrides = new List<VariantMaterialOverride>();
 
-        [Tooltip("このバリアントのビルドで設定するブレンドシェイプ。")]
+        // このバリアントのビルドで設定するブレンドシェイプ。
         public List<VariantBlendShapeChange> BlendShapeChanges = new List<VariantBlendShapeChange>();
     }
 
@@ -70,15 +70,15 @@ namespace MinMinMart.AvatarVariant
     [CreateAssetMenu(fileName = "AvatarVariantSet", menuName = "MinMinMart/Avatar Variant Set")]
     public class AvatarVariantSet : ScriptableObject
     {
-        [Tooltip("アップロード先の一覧。いくつでも追加できる。")]
+        // アップロード先の一覧。いくつでも追加できる。
         public List<AvatarVariantDefinition> Variants = new List<AvatarVariantDefinition>();
 
         // 新規アバターとしてアップロードする予定のバリアント。
         // Blueprint ID が採番されたら自動で書き写して空に戻る。
         [HideInInspector] public string PendingVariantKey = "";
 
-        [Tooltip("Blueprint ID がどのバリアントにも一致しないとき、ビルドを止めずに続行する。" +
-                 "通常は無効のままにする。ここで失敗させることが、取り違えを防ぐ仕組みそのものなので。")]
+        // Blueprint ID がどのバリアントにも一致しないとき、ビルドを止めずに続行する。
+        // 通常は無効のままにする。ここで失敗させることが、取り違えを防ぐ仕組みそのものなので。
         public bool AllowUnmatchedBlueprintId = false;
 
         /// <summary>
