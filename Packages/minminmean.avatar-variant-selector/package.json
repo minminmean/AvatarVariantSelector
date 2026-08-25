@@ -3,6 +3,7 @@
   "displayName": "Avatar Variant Selector",
   "version": "1.0.0",
   "description": "Build several upload variants of one avatar from a single scene",
+  "license": "MIT",
   "gitDependencies": {},
   "vpmDependencies": {
     "com.vrchat.avatars": ">=3.7.0",
