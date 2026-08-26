@@ -1,5 +1,5 @@
 {
-    "language": "言語",
+    "language": "Language",
     "profile_asset": "プロファイル",
     "profile_asset_help": "このコンポーネントの設定を保存するアセットです。\n新しくプロファイルを作成するか、既存のプロファイルを読み込んでください。",
     "create_profile_asset": "プロファイルを作成",
