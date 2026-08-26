@@ -40,7 +40,6 @@ namespace MinMinMart.AvatarVariant.Editor
                 problems.AddRange(CheckBlendShapes(v, rootT));
             }
 
-            problems.Add(CheckAllowUnmatched(set));
 
             return problems;
         }
@@ -137,13 +136,6 @@ namespace MinMinMart.AvatarVariant.Editor
             return problems;
         }
 
-        /// <summary>
-        /// 取り違え防止を外す設定が入っていれば、その旨。入っていなければ null。
-        /// </summary>
-        private static string CheckAllowUnmatched(AvatarVariantSet set)
-        {
-            return set.AllowUnmatchedBlueprintId ? LocalizeDict.warn_allow_unmatched : null;
-        }
 
 
 

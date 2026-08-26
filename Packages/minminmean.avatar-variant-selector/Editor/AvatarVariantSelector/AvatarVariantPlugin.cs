@@ -66,31 +66,24 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (variant == null)
             {
-                if (!set.AllowUnmatchedBlueprintId)
-                {
-                    IEnumerable<string> known = set.Variants
-                        .Where(v => v != null)
-                        .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
+                IEnumerable<string> known = set.Variants
+                    .Where(v => v != null)
+                    .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
 
-                    string hint = string.IsNullOrEmpty(blueprintId) ? LocalizeDict.build_hint_new : LocalizeDict.build_hint_switch;
+                string hint = string.IsNullOrEmpty(blueprintId) ? LocalizeDict.build_hint_new : LocalizeDict.build_hint_switch;
 
-                    throw new System.Exception(string.Format(LocalizeDict.build_cannot_resolve,
-                        string.IsNullOrEmpty(blueprintId) ? LocalizeDict.blueprint_id_unassigned : blueprintId,
-                        string.Join("\n", known),
-                        hint));
-                }
-
-                Debug.LogWarning(LocalizeDict.build_allow_unmatched_warn);
+                throw new System.Exception(string.Format(LocalizeDict.build_cannot_resolve,
+                    string.IsNullOrEmpty(blueprintId) ? LocalizeDict.blueprint_id_unassigned : blueprintId,
+                    string.Join("\n", known),
+                    hint));
             }
-            else
+
+            if (viaPending)
             {
-                if (viaPending)
-                {
-                    Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
-                }
-
-                ApplyVariant(variant, root);
+                Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
             }
+
+            ApplyVariant(variant, root);
 
             // ビルド成果物に残さない。
             foreach (AvatarVariantSelector s in selectors)

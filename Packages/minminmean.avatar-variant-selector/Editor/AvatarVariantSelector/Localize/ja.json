@@ -48,7 +48,6 @@
     "shape_missing_suffix": "  (このメッシュに存在しません)",
     "outside_avatar_pick": "[Avatar Variant] '{0}' はアバターの外にあるため指定できません。",
     "outside_avatar_drop": "[Avatar Variant] '{0}' はアバターの外にあるため追加しませんでした。",
-    "allow_unmatched": "未選択でもビルドを許可",
 
     "warn_duplicate_id": "Blueprint ID '{0}' が複数のバリアントで重複しています。",
     "warn_remove_missing": "「{0}」の削除対象 '{1}' が見つかりません。ビルド時にエラーになります。",
@@ -57,7 +56,6 @@
     "warn_shape_no_renderer": "「{0}」のブレンドシェイプ: '{1}' が見つからないか SkinnedMeshRenderer がありません。",
     "warn_shape_unselected": "「{0}」のブレンドシェイプ: '{1}' のシェイプが未選択です。",
     "warn_shape_missing": "「{0}」のブレンドシェイプ: '{1}' に '{2}' がありません。",
-    "warn_allow_unmatched": "「未選択でもビルドを許可」が有効です。取り違え防止が効かなくなるので常用は避けてください。",
 
     "log_switched": "[Avatar Variant] アップロード先を「{0}」({1}) に切り替えました。",
     "log_marked_pending": "[Avatar Variant] 「{0}」を新規アップロード対象にしました。Blueprint ID を空にしたので、次のアップロードで新しいアバターが作られます。",
@@ -77,7 +75,6 @@
     "build_cannot_resolve": "[Avatar Variant] ビルドするバリアントを決められないため、誤った内容をアップロードしないようビルドを中断しました。\n  現在の ID: {0}\n  登録済みのバリアント:\n{1}\n{2}",
     "build_hint_new": "  新規アバターとして上げるなら、Avatar Variant Selector で対象バリアントの「新規アップロード対象にする」を押してください。",
     "build_hint_switch": "  Avatar Variant Selector でバリアントを選び直してください。",
-    "build_allow_unmatched_warn": "[Avatar Variant] Blueprint ID がどのバリアントにも一致しません。「未選択でもビルドを許可」が有効なため、シーンの内容をそのままビルドします。",
     "build_via_pending": "[Avatar Variant] Blueprint ID が未採番のため、新規アップロード待ちのバリアント「{0}」としてビルドします。",
     "build_remove_missing": "[Avatar Variant] バリアント「{0}」の削除対象 '{1}' が見つかりません。リネームや移動でパスが切れている可能性があります。消し損ねた内容をアップロードしないよう、ビルドを中断しました。",
     "build_target_missing": "[Avatar Variant] バリアント「{0}」の対象 '{1}' が見つかりません。リネームや移動でパスが切れている可能性があります。",

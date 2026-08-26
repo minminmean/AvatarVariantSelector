@@ -63,7 +63,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string shape_missing_suffix;
         public string outside_avatar_pick;
         public string outside_avatar_drop;
-        public string allow_unmatched;
 
         public string warn_duplicate_id;
         public string warn_remove_missing;
@@ -72,7 +71,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string warn_shape_no_renderer;
         public string warn_shape_unselected;
         public string warn_shape_missing;
-        public string warn_allow_unmatched;
 
         public string log_switched;
         public string log_marked_pending;
@@ -92,7 +90,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string build_cannot_resolve;
         public string build_hint_new;
         public string build_hint_switch;
-        public string build_allow_unmatched_warn;
         public string build_via_pending;
         public string build_remove_missing;
         public string build_target_missing;

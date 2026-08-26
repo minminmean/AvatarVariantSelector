@@ -77,9 +77,6 @@ namespace MinMinMart.AvatarVariant
         // Blueprint ID が採番されたら自動で書き写して空に戻る。
         [HideInInspector] public string PendingVariantKey = "";
 
-        // Blueprint ID がどのバリアントにも一致しないとき、ビルドを止めずに続行する。
-        // 通常は無効のままにする。ここで失敗させることが、取り違えを防ぐ仕組みそのものなので。
-        public bool AllowUnmatchedBlueprintId = false;
 
         /// <summary>
         /// <paramref name="blueprintId"/> に一致するバリアントを返す。無ければ null。

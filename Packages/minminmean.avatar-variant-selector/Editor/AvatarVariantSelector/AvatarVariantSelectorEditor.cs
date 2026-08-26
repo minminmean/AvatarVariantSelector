@@ -70,9 +70,6 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUILayout.Space();
 
             DrawVariants(setSo, root, pm);
-            EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(setSo.FindProperty("AllowUnmatchedBlueprintId"),
-                new GUIContent(LocalizeDict.allow_unmatched));
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。

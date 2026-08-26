@@ -48,7 +48,6 @@
     "shape_missing_suffix": "  (not present on this mesh)",
     "outside_avatar_pick": "[Avatar Variant] '{0}' is outside the avatar and cannot be used.",
     "outside_avatar_drop": "[Avatar Variant] '{0}' is outside the avatar and was not added.",
-    "allow_unmatched": "Build even when no variant matches",
 
     "warn_duplicate_id": "Blueprint ID '{0}' is used by more than one variant.",
     "warn_remove_missing": "'{0}': removal target '{1}' was not found. The build will fail.",
@@ -57,7 +56,6 @@
     "warn_shape_no_renderer": "'{0}': blend shape target '{1}' was not found, or has no SkinnedMeshRenderer.",
     "warn_shape_unselected": "'{0}': no blend shape selected for '{1}'.",
     "warn_shape_missing": "'{0}': '{1}' has no blend shape named '{2}'.",
-    "warn_allow_unmatched": "'Build even when no variant matches' is enabled. This disables the safeguard against uploading the wrong content; avoid leaving it on.",
 
     "log_switched": "[Avatar Variant] Upload target switched to '{0}' ({1}).",
     "log_marked_pending": "[Avatar Variant] '{0}' is queued for a new upload. The blueprint ID was cleared, so the next upload creates a new avatar.",
@@ -77,7 +75,6 @@
     "build_cannot_resolve": "[Avatar Variant] The build was stopped because the variant to build could not be determined, rather than risk uploading the wrong content.\n  current ID: {0}\n  known variants:\n{1}\n{2}",
     "build_hint_new": "  To upload as a new avatar, press 'Upload as a new avatar' for that variant in the Avatar Variant Selector.",
     "build_hint_switch": "  Pick a variant again in the Avatar Variant Selector.",
-    "build_allow_unmatched_warn": "[Avatar Variant] The blueprint ID matches no variant. Building the scene as-is because 'Build even when no variant matches' is enabled.",
     "build_via_pending": "[Avatar Variant] The blueprint ID is unassigned, so building as the queued new-upload variant '{0}'.",
     "build_remove_missing": "[Avatar Variant] '{0}': removal target '{1}' was not found. A rename or reparent may have broken the path. The build was stopped so that content you meant to strip is not uploaded.",
     "build_target_missing": "[Avatar Variant] '{0}': target '{1}' was not found. A rename or reparent may have broken the path.",
