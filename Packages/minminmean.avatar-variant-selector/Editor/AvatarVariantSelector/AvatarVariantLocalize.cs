@@ -47,6 +47,8 @@ namespace MinMinMart.AvatarVariant.Editor
         public string delete_dialog_cancel;
         public string operations_header;
         public string add_variant;
+        public string apply_changes;
+        public string unapplied_changes;
         public string copy_suffix;
 
         public string op_remove;
@@ -65,6 +67,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public string outside_avatar_drop;
         public string allow_unmatched;
 
+        public string warn_name_required;
         public string warn_duplicate_id;
         public string warn_remove_missing;
         public string warn_material_missing;
@@ -116,6 +119,10 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private const string LanguagePrefKey = "MinMinMart.AvatarVariant.Language";
 
+        // EditorPrefs はレジストリを読むため、表示のたびに引くと積み重なって重くなる。
+        // ドメインリロードごとに 1 回だけ読み、以降はこの値を使う。
+        private static int _languageIndex = -1;
+
         private static int _cachedIndex = -1;
         private static AvatarVariantLocalizeDictionary _cached;
 
@@ -126,14 +133,23 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             get
             {
-                int fallback = Application.systemLanguage == SystemLanguage.Japanese ? 0 : 1;
-                return Mathf.Clamp(EditorPrefs.GetInt(LanguagePrefKey, fallback), 0, LocalizeFiles.Length - 1);
+                if (_languageIndex < 0)
+                {
+                    int fallback = Application.systemLanguage == SystemLanguage.Japanese ? 0 : 1;
+                    _languageIndex = Mathf.Clamp(EditorPrefs.GetInt(LanguagePrefKey, fallback),
+                        0, LocalizeFiles.Length - 1);
+                }
+
+                return _languageIndex;
             }
 
             set
             {
-                if (value == LanguageIndex) return;
-                EditorPrefs.SetInt(LanguagePrefKey, Mathf.Clamp(value, 0, LocalizeFiles.Length - 1));
+                int clamped = Mathf.Clamp(value, 0, LocalizeFiles.Length - 1);
+                if (clamped == LanguageIndex) return;
+
+                EditorPrefs.SetInt(LanguagePrefKey, clamped);
+                _languageIndex = clamped;
                 _cachedIndex = -1;
             }
         }

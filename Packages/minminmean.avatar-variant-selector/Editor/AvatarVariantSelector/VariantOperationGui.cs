@@ -19,9 +19,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         internal static void DrawRemoveList(SerializedProperty paths, Transform root)
         {
-            paths.isExpanded = EditorGUILayout.Foldout(paths.isExpanded,
-                string.Format(T.op_remove, paths.arraySize), true);
-            if (!paths.isExpanded) return;
+            bool expanded = FoldoutState.GetExpanded(paths);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_remove, paths.arraySize), true);
+            FoldoutState.SetExpanded(paths, expanded);
+            if (!expanded) return;
 
             using (new EditorGUI.IndentLevelScope())
             {
@@ -47,9 +48,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         internal static void DrawMaterialList(SerializedProperty list, Transform root)
         {
-            list.isExpanded = EditorGUILayout.Foldout(list.isExpanded,
-                string.Format(T.op_material, list.arraySize), true);
-            if (!list.isExpanded) return;
+            bool expanded = FoldoutState.GetExpanded(list);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_material, list.arraySize), true);
+            FoldoutState.SetExpanded(list, expanded);
+            if (!expanded) return;
 
             using (new EditorGUI.IndentLevelScope())
             {
@@ -82,9 +84,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         internal static void DrawBlendShapeList(SerializedProperty list, Transform root)
         {
-            list.isExpanded = EditorGUILayout.Foldout(list.isExpanded,
-                string.Format(T.op_blendshape, list.arraySize), true);
-            if (!list.isExpanded) return;
+            bool expanded = FoldoutState.GetExpanded(list);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_blendshape, list.arraySize), true);
+            FoldoutState.SetExpanded(list, expanded);
+            if (!expanded) return;
 
             using (new EditorGUI.IndentLevelScope())
             {

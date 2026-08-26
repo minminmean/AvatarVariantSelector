@@ -31,6 +31,8 @@
     "delete_dialog_message": "Delete the settings for '{0}'. (Undo will restore them.)",
     "delete_dialog_cancel": "Cancel",
     "operations_header": "Operations applied when building this variant",
+    "unapplied_changes": "You have unapplied changes. Press Apply to save them to the settings asset.",
+    "apply_changes": "Apply",
     "add_variant": "+ Add variant",
     "copy_suffix": " copy",
 
@@ -50,6 +52,7 @@
     "outside_avatar_drop": "[Avatar Variant] '{0}' is outside the avatar and was not added.",
     "allow_unmatched": "Build even when no variant matches",
 
+    "warn_name_required": "Some variants have no name. They stay out of the switch list until you name them.",
     "warn_duplicate_id": "Blueprint ID '{0}' is used by more than one variant.",
     "warn_remove_missing": "'{0}': removal target '{1}' was not found. The build will fail.",
     "warn_material_missing": "'{0}': material swap target '{1}' was not found, or has no Renderer.",

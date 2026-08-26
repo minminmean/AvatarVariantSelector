@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -24,6 +25,17 @@ namespace MinMinMart.AvatarVariant.Editor
         private const float NameFieldRatio = 0.34f;
 
         private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+
+        // 「適用」を押した時点のバリアント名。切り替えボタンの表示にはこれを使う。
+        // 入力のたびにボタンが増減すると IMGUI のコントロール ID が後ろへずれ、
+        // 入力中のテキスト欄からフォーカスが外れてしまうため。
+        private readonly List<string> _appliedNames = new List<string>();
+
+        private void OnEnable()
+        {
+            // 対象が変わったので取り直す。
+            _appliedNames.Clear();
+        }
 
         public override void OnInspectorGUI()
         {
@@ -58,25 +70,44 @@ namespace MinMinMart.AvatarVariant.Editor
             SerializedObject setSo = new SerializedObject(set);
             setSo.Update();
 
+            // 追加・削除はボタン操作なので入力中ではない。件数が動いたときだけ取り直す。
+            if (_appliedNames.Count != setSo.FindProperty("Variants").arraySize)
+            {
+                CaptureNames(setSo);
+            }
+
             DrawStatus(set, root, pm);
             EditorGUILayout.Space();
             DrawPendingBanner(set);
             DrawSwitcher(set, pm);
             EditorGUILayout.Space();
-            DrawWarnings(set, root);
+            DrawNotices(set, setSo, root);
             EditorGUILayout.Space();
 
-            EditorGUI.BeginChangeCheck();
             DrawVariants(setSo, root, pm);
+            bool apply = DrawApplyButton(set, setSo);
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(setSo.FindProperty("AllowUnmatchedBlueprintId"),
                 new GUIContent(T.allow_unmatched));
 
-            if (setSo.ApplyModifiedProperties() || EditorGUI.EndChangeCheck())
+            // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
+            // GUI.changed を見ると折りたたみや「適用」自身の押下まで拾ってしまう。
+            if (setSo.ApplyModifiedProperties())
             {
-                // 設定アセットはその場で保存する。シーン保存に依存させない。
+                // ここではディスクに書かない。1 文字ごとに書き出すと再インポートが走って重い。
+                // 変更済みの印だけ付けておき、実際に書くのは「適用」を押したとき。
                 EditorUtility.SetDirty(set);
+            }
+
+            if (apply)
+            {
+                // ボタンを描いた時点では、このフレームの入力がまだ setSo の中にしかない。
+                // 反映を終えたここで確定させる。
+                CaptureNames(setSo);
                 AssetDatabase.SaveAssetIfDirty(set);
+
+                // 一覧が変わるので、入力欄からフォーカスを外しておく。
+                GUI.FocusControl(null);
             }
         }
 
@@ -118,7 +149,9 @@ namespace MinMinMart.AvatarVariant.Editor
                     Rect nameRect = new Rect(x, row.y, nameWidth, row.height);
                     Rect idRect = new Rect(x + nameWidth + Gap, row.y, fieldsWidth - nameWidth - Gap, row.height);
 
-                    variant.isExpanded = EditorGUI.Foldout(foldRect, variant.isExpanded, GUIContent.none, true);
+                    bool expanded = FoldoutState.GetExpanded(variant);
+                    expanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
+                    FoldoutState.SetExpanded(variant, expanded);
                     DrawCurrentMarker(markRect, isCurrent);
                     DrawFieldWithPlaceholder(nameRect, nameProp, T.placeholder_name);
                     DrawFieldWithPlaceholder(idRect, idProp, T.placeholder_id);
@@ -148,7 +181,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         return;
                     }
 
-                    if (!variant.isExpanded) continue;
+                    if (!expanded) continue;
 
                     EditorGUILayout.Space(2);
                     EditorGUILayout.LabelField(T.operations_header, EditorStyles.miniBoldLabel);
@@ -220,7 +253,7 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUILayout.Space();
         }
 
-        private static void DrawSwitcher(AvatarVariantSet set, VRC.Core.PipelineManager pm)
+        private void DrawSwitcher(AvatarVariantSet set, VRC.Core.PipelineManager pm)
         {
             if (pm == null) return;
 
@@ -228,9 +261,17 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
-                foreach (AvatarVariantDefinition variant in set.Variants)
+                for (int i = 0; i < set.Variants.Count; i++)
                 {
+                    AvatarVariantDefinition variant = set.Variants[i];
                     if (variant == null) continue;
+
+                    // 表示に使うのは「適用」時点の名前。入力中の値は反映しない。
+                    string name = i < _appliedNames.Count ? _appliedNames[i] : variant.Name;
+
+                    // 名前が空だとボタンの文言が「 を新規アップロード対象にする」のように
+                    // 主語を欠いてしまう。未入力であることは検証の警告で知らせる。
+                    if (string.IsNullOrWhiteSpace(name)) continue;
 
                     // ID が未採番のバリアントは、切り替えではなく新規アップロードの対象として選ぶ。
                     if (string.IsNullOrEmpty(variant.BlueprintId))
@@ -238,7 +279,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         bool isPending = set.PendingVariant == variant;
                         using (new EditorGUI.DisabledScope(isPending))
                         {
-                            string label = string.Format(isPending ? T.pending_label : T.mark_new_upload, variant.Name);
+                            string label = string.Format(isPending ? T.pending_label : T.mark_new_upload, name);
                             if (GUILayout.Button(label, GUILayout.Height(26)))
                             {
                                 AvatarVariantSwitcher.MarkPending(set, pm, variant);
@@ -251,7 +292,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     bool isCurrent = variant.BlueprintId == pm.blueprintId;
                     using (new EditorGUI.DisabledScope(isCurrent))
                     {
-                        string label = string.Format(isCurrent ? T.switch_current : T.switch_to, variant.Name);
+                        string label = string.Format(isCurrent ? T.switch_current : T.switch_to, name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
                             AvatarVariantSwitcher.SwitchTo(pm, variant);
@@ -261,14 +302,97 @@ namespace MinMinMart.AvatarVariant.Editor
             }
         }
 
+        // ---------- 名前の適用 ----------
+
+        /// <summary>
+        /// 「適用」ボタンを描き、押されたかどうかを返す。
+        ///
+        /// 押せないときも必ず描く。ボタン自体が出入りすると、それがコントロール ID を
+        /// ずらしてしまい、防ごうとしているフォーカス外れをこのボタンが起こしてしまう。
+        /// </summary>
+        private bool DrawApplyButton(AvatarVariantSet set, SerializedObject setSo)
+        {
+            using (new EditorGUI.DisabledScope(!HasPendingChanges(set, setSo)))
+            {
+                return GUILayout.Button(T.apply_changes);
+            }
+        }
+
+        /// <summary>
+        /// 「適用」で確定させるべき変更が残っているか。通知とボタンの活性で同じ判定を使う。
+        /// </summary>
+        private bool HasPendingChanges(AvatarVariantSet set, SerializedObject setSo)
+        {
+            return HasUnappliedNames(setSo) || EditorUtility.IsDirty(set);
+        }
+
+        private void CaptureNames(SerializedObject setSo)
+        {
+            SerializedProperty variants = setSo.FindProperty("Variants");
+
+            _appliedNames.Clear();
+            for (int i = 0; i < variants.arraySize; i++)
+            {
+                _appliedNames.Add(variants.GetArrayElementAtIndex(i).FindPropertyRelative("Name").stringValue);
+            }
+        }
+
+        private bool HasUnappliedNames(SerializedObject setSo)
+        {
+            SerializedProperty variants = setSo.FindProperty("Variants");
+            if (_appliedNames.Count != variants.arraySize) return true;
+
+            for (int i = 0; i < variants.arraySize; i++)
+            {
+                string current = variants.GetArrayElementAtIndex(i).FindPropertyRelative("Name").stringValue;
+                if (current != _appliedNames[i]) return true;
+            }
+
+            return false;
+        }
+
         // ---------- 検証 ----------
 
-        private static void DrawWarnings(AvatarVariantSet set, GameObject root)
+        /// <summary>
+        /// 警告と適用状態を 1 つの箱にまとめて出す。
+        ///
+        /// 箱は名前の入力欄より前に描かれる。HelpBox は内部の EditorGUI.LabelField で
+        /// コントロール ID を確保するため、出したり消したりすると確保数が変わり、
+        /// 入力欄の ID がずれて入力中にフォーカスが外れてしまう。そこで中身が無いときも
+        /// 場所取りだけは描き、見た目にだけ現れないようにしている。
+        /// 行数が増減して高さが変わるぶんには影響しない。
+        /// </summary>
+        private void DrawNotices(AvatarVariantSet set, SerializedObject setSo, GameObject root)
         {
-            List<string> problems = AvatarVariantValidator.CollectProblems(set, root);
-            if (problems.Count == 0) return;
+            List<string> messages = new List<string>();
 
-            EditorGUILayout.HelpBox(string.Join("\n", problems), MessageType.Warning);
+            // 名前の未入力は「適用」済みの内容だけで判断する。
+            // 入力途中の空欄で警告を出すと、消すために入力を急かす表示になってしまう。
+            if (_appliedNames.Any(string.IsNullOrWhiteSpace))
+            {
+                messages.Add(T.warn_name_required);
+            }
+
+            messages.AddRange(AvatarVariantValidator.CollectProblems(set, root));
+
+            bool hasProblem = messages.Count > 0;
+            if (HasPendingChanges(set, setSo))
+            {
+                messages.Add(T.unapplied_changes);
+            }
+
+            if (messages.Count == 0)
+            {
+                // 出すものが無くても、同じ経路で高さ 0 の場所取りだけ描いておく。
+                // HelpBox は内部で EditorGUI.LabelField を通るので、こちらも同じ
+                // オーバーロードを呼べば、確保されるコントロール ID の数が揃う。
+                EditorGUILayout.LabelField(GUIContent.none, GUIContent.none, GUIStyle.none,
+                    GUILayout.Height(0));
+                return;
+            }
+
+            EditorGUILayout.HelpBox(string.Join("\n", messages),
+                hasProblem ? MessageType.Warning : MessageType.Info);
         }
 
         // ---------- 補助 ----------
@@ -313,7 +437,6 @@ namespace MinMinMart.AvatarVariant.Editor
             variants.arraySize++;
 
             SerializedProperty v = variants.GetArrayElementAtIndex(index);
-            v.isExpanded = false;
             v.FindPropertyRelative("Name").stringValue = "";
             v.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
             v.FindPropertyRelative("BlueprintId").stringValue = "";
@@ -331,7 +454,6 @@ namespace MinMinMart.AvatarVariant.Editor
             variants.InsertArrayElementAtIndex(index);
 
             SerializedProperty copy = variants.GetArrayElementAtIndex(index + 1);
-            copy.isExpanded = false;
             SerializedProperty nameProp = copy.FindPropertyRelative("Name");
             nameProp.stringValue = nameProp.stringValue + T.copy_suffix;
             copy.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
