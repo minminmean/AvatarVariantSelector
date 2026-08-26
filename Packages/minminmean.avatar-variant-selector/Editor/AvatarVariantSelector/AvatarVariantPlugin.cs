@@ -64,26 +64,35 @@ namespace MinMinMart.AvatarVariant.Editor
             string blueprintId = GetBlueprintId(root);
             AvatarVariantDefinition variant = set.ResolveForBuild(blueprintId, out bool viaPending);
 
-            if (variant == null)
+            // Blueprint ID が入っているのに一致するバリアントが無いときは止める。
+            // どれを上書きするか決まらないまま既存アバターへ上げてしまうため、推測で進めない。
+            if (variant == null && !string.IsNullOrEmpty(blueprintId))
             {
                 IEnumerable<string> known = set.Variants
                     .Where(v => v != null)
                     .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
 
-                string hint = string.IsNullOrEmpty(blueprintId) ? LocalizeDict.build_hint_new : LocalizeDict.build_hint_switch;
-
                 throw new System.Exception(string.Format(LocalizeDict.build_cannot_resolve,
-                    string.IsNullOrEmpty(blueprintId) ? LocalizeDict.blueprint_id_unassigned : blueprintId,
+                    blueprintId,
                     string.Join("\n", known),
-                    hint));
+                    LocalizeDict.build_hint_switch));
             }
 
-            if (viaPending)
+            if (variant == null)
             {
-                Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
+                // どのバリアントも選ばれていない。Blueprint ID も空で上書き先が無いので、
+                // 何も適用せず PipelineManager に入っている指定のままアップロードさせる。
+                Debug.Log(LocalizeDict.build_no_selection);
             }
+            else
+            {
+                if (viaPending)
+                {
+                    Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
+                }
 
-            ApplyVariant(variant, root);
+                ApplyVariant(variant, root);
+            }
 
             // ビルド成果物に残さない。
             foreach (AvatarVariantSelector s in selectors)

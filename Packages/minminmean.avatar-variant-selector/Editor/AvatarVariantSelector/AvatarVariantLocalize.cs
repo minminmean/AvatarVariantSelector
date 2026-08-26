@@ -22,15 +22,16 @@ namespace MinMinMart.AvatarVariant.Editor
         public string no_pipeline_manager;
 
         public string build_target;
-        public string build_target_new;
         public string build_target_none;
         public string blueprint_id;
         public string blueprint_id_unassigned;
-        public string scene_untouched_help;
+        public string blueprint_id_new_upload;
+        public string blueprint_id_line;
 
         public string switch_header;
         public string switch_to;
         public string switch_current;
+        public string switch_no_variants;
         public string mark_new_upload;
         public string pending_label;
         public string pending_banner;
@@ -63,6 +64,8 @@ namespace MinMinMart.AvatarVariant.Editor
         public string outside_avatar_pick;
         public string outside_avatar_drop;
 
+        public string warn_no_variants;
+        public string warn_no_selection;
         public string warn_duplicate_id;
         public string warn_remove_missing;
         public string warn_material_missing;
@@ -87,9 +90,9 @@ namespace MinMinMart.AvatarVariant.Editor
         public string build_multiple_selectors;
         public string build_no_set;
         public string build_cannot_resolve;
-        public string build_hint_new;
         public string build_hint_switch;
         public string build_via_pending;
+        public string build_no_selection;
         public string build_remove_missing;
         public string build_target_missing;
         public string build_no_renderer;

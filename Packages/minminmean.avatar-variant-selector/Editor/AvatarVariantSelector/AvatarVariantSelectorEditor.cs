@@ -9,7 +9,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// アバターに付けたコンポーネントの Inspector。
     ///
     /// 表示の組み立てと、バリアント一覧の行レイアウトだけを持つ。
-    /// 検証は <see cref="AvatarVariantValidator"/>、切り替えは <see cref="AvatarVariantSwitcher"/>、
+    /// 通知欄の内容は <see cref="AvatarVariantNoticeCollector"/>、切り替えは <see cref="AvatarVariantSwitcher"/>、
     /// 操作リストは <see cref="VariantOperationGui"/> にそれぞれ委ねている。
     /// </summary>
     [CustomEditor(typeof(AvatarVariantSelector))]
@@ -38,7 +38,6 @@ namespace MinMinMart.AvatarVariant.Editor
                 : null;
 
             AvatarVariantLocalize.DrawLanguagePopup();
-            EditorGUILayout.Space();
 
             serializedObject.Update();
             EditorGUILayout.PropertyField(serializedObject.FindProperty("Set"), new GUIContent(LocalizeDict.set_asset));
@@ -60,16 +59,20 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantSet set = selector.Set;
             SerializedObject setSo = new SerializedObject(set);
             setSo.Update();
+            EditorGUILayout.Space();
 
             DrawStatus(set, root, pm);
             EditorGUILayout.Space();
-            DrawPendingBanner(set);
-            DrawSwitcher(set, pm);
-            EditorGUILayout.Space();
-            DrawNotices(set, root);
-            EditorGUILayout.Space();
 
             DrawVariants(setSo, root, pm);
+            EditorGUILayout.Space();
+
+            // 切り替えボタンと警告は入力欄より後ろに置く。IMGUI はコントロールの並び順で
+            // フォーカスを覚えているので、入力欄より手前に出入りするものがあると、
+            // 打っている最中にフォーカスが隣のコントロールへ移ってしまう。
+            DrawSwitcher(set, pm);
+            EditorGUILayout.Space();
+            DrawNotices(set, root, pm != null ? pm.blueprintId : null);
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。
@@ -91,14 +94,21 @@ namespace MinMinMart.AvatarVariant.Editor
             SerializedProperty variants = setSo.FindProperty("Variants");
             EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
+            AvatarVariantSet set = (AvatarVariantSet)setSo.targetObject;
+            AvatarVariantDefinition pending = set.PendingVariant;
+
             for (int i = 0; i < variants.arraySize; i++)
             {
                 SerializedProperty variant = variants.GetArrayElementAtIndex(i);
                 SerializedProperty nameProp = variant.FindPropertyRelative("Name");
                 SerializedProperty idProp = variant.FindPropertyRelative("BlueprintId");
-                bool isCurrent = pm != null
-                                 && !string.IsNullOrEmpty(idProp.stringValue)
-                                 && idProp.stringValue == pm.blueprintId;
+
+                // 選択中の印は切り替えボタンと同じ基準で付ける。Blueprint ID がまだ無い
+                // バリアントは ID で判別できないので、新規アップロード待ちの指定を見る。
+                AvatarVariantDefinition definition = i < set.Variants.Count ? set.Variants[i] : null;
+                bool isCurrent = string.IsNullOrEmpty(idProp.stringValue)
+                    ? definition != null && definition == pending
+                    : pm != null && idProp.stringValue == pm.blueprintId;
 
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
@@ -190,36 +200,53 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            AvatarVariantDefinition current = set.ResolveForBuild(pm.blueprintId, out bool viaPending);
-            GUIStyle style = new GUIStyle(EditorStyles.helpBox)
+            AvatarVariantDefinition current = set.ResolveForBuild(pm.blueprintId, out bool _);
+            // 枠と中身を分けて描く。1 つのラベルに改行を入れると行間を詰められないので、
+            // 枠だけ先に用意して、その中に 1 行ずつ置く。
+            GUIStyle boxStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                padding = new RectOffset(14, 8, 10, 10),
+            };
+
+            GUIStyle lineStyle = new GUIStyle(EditorStyles.label)
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                padding = new RectOffset(8, 8, 10, 10),
+                alignment = TextAnchor.MiddleLeft,
+                wordWrap = true,
             };
-            style.normal.textColor = current != null
+            lineStyle.normal.textColor = current != null
                 ? new Color(0.35f, 0.75f, 0.35f)
                 : new Color(0.9f, 0.5f, 0.3f);
 
-            string caption = current == null
-                ? LocalizeDict.build_target_none
-                : string.Format(viaPending ? LocalizeDict.build_target_new : LocalizeDict.build_target, current.Name);
+            // 名前が空でも書式は変えない。差し込む文字だけ「(名前なし)」に替えて、
+            // 「ビルド対象: 〜」の並びを崩さないようにする。
+            string caption = LocalizeDict.build_target_none;
+            if (current != null)
+            {
+                string name = string.IsNullOrWhiteSpace(current.Name) ? LocalizeDict.asset_unnamed : current.Name;
+                caption = string.Format(LocalizeDict.build_target, name);
+            }
 
-            EditorGUILayout.LabelField(caption, style);
-            EditorGUILayout.LabelField(LocalizeDict.blueprint_id,
-                string.IsNullOrEmpty(pm.blueprintId) ? LocalizeDict.blueprint_id_unassigned : pm.blueprintId);
+            using (new EditorGUILayout.VerticalScope(boxStyle))
+            {
+                GUILayout.Label(caption, lineStyle);
 
-            EditorGUILayout.HelpBox(LocalizeDict.scene_untouched_help, MessageType.None);
-        }
+                // 2 行目はアップロード先の Blueprint ID。まだ採番されていなければ、
+                // 新規アバターとして上がる旨を出す。
+                //
+                // 未選択のときは出さない。バリアントを選んだ後に全部消すと PipelineManager 側に
+                // ID が残るので、そのまま出すとどこにも紐づかない ID を掲げることになる。
+                if (current != null)
+                {
+                    string id = string.IsNullOrEmpty(pm.blueprintId)
+                        ? LocalizeDict.blueprint_id_new_upload
+                        : pm.blueprintId;
 
-        private static void DrawPendingBanner(AvatarVariantSet set)
-        {
-            AvatarVariantDefinition pending = set.PendingVariant;
-            if (pending == null) return;
-
-            EditorGUILayout.HelpBox(string.Format(LocalizeDict.pending_banner, pending.Name), MessageType.Info);
-            EditorGUILayout.Space();
+                    GUILayout.Space(3f);
+                    GUILayout.Label(string.Format(LocalizeDict.blueprint_id_line, id), lineStyle);
+                }
+            }
         }
 
         private void DrawSwitcher(AvatarVariantSet set, VRC.Core.PipelineManager pm)
@@ -227,6 +254,12 @@ namespace MinMinMart.AvatarVariant.Editor
             if (pm == null) return;
 
             EditorGUILayout.LabelField(LocalizeDict.switch_header, EditorStyles.boldLabel);
+
+            if (set.Variants.All(v => v == null))
+            {
+                EditorGUILayout.HelpBox(LocalizeDict.switch_no_variants, MessageType.Info);
+                return;
+            }
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
@@ -287,34 +320,36 @@ namespace MinMinMart.AvatarVariant.Editor
 
         /// <summary>
         /// WarnとInfoを書き出す。
-        /// Warnの内容はAvatarVariantValidatorに責務がある。
+        /// どちらも内容はAvatarVariantNoticeCollectorに責務がある。
         /// </summary>
-        private void DrawNotices(AvatarVariantSet set, GameObject root)
+        private void DrawNotices(AvatarVariantSet set, GameObject root, string blueprintId)
         {
-            List<string> warnMessages = AvatarVariantValidator.CollectProblems(set, root);
-            DrawHelpBoxs(warnMessages, MessageType.Warning);
+            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectProblems(set, root, blueprintId), MessageType.Warning);
+            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectInfos(set), MessageType.Info);
         }
 
         // ---------- 補助 ----------
 
         // 渡された List<string> で HelpBox を描画する。
-        // フォーカスズレを防ぐため、null を受け取った時もコントロール ID だけは確保する。
-        // 場所取りを描くと中身が無い分の高さが積み上がって隙間になるので、ID だけ進める。
+        //
+        // 同じ文言は最初の 1 件だけ描く。
         private static void DrawHelpBoxs(List<string> messages, MessageType messageType)
         {
+            HashSet<string> drawnMessages = new HashSet<string>();
+
             foreach (string message in messages)
             {
-                if (!string.IsNullOrEmpty(message))
-                {
-                    EditorGUILayout.HelpBox(message, messageType);
-                }
-                else
-                {
-                    GUIUtility.GetControlID(FocusType.Passive);
-                }
+                if (!drawnMessages.Add(message)) continue;
+
+                EditorGUILayout.HelpBox(message, messageType);
             }
         }
 
+        // 現在のバリアントに ● を付ける。
+        //
+        // EditorGUI.LabelField ではなく GUI.Label を使う。前者はコントロール ID を消費するので、
+        // 切り替えで ● の位置が動くたびに、後ろにある入力欄の ID がズレてフォーカスが外れる。
+        // GUI.Label は描くだけで ID を消費しないため、出ていても出ていなくても数が変わらない。
         private static void DrawCurrentMarker(Rect rect, bool isCurrent)
         {
             if (!isCurrent) return;
@@ -325,7 +360,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 padding = new RectOffset(0, 0, 0, 0),
             };
             style.normal.textColor = new Color(0.35f, 0.75f, 0.35f);
-            EditorGUI.LabelField(rect, "●", style);
+            GUI.Label(rect, "●", style);
         }
 
         private static void DrawFieldWithPlaceholder(Rect rect, SerializedProperty prop, string placeholder)
@@ -341,7 +376,8 @@ namespace MinMinMart.AvatarVariant.Editor
             style.normal.textColor = new Color(0.5f, 0.5f, 0.5f, 0.9f);
 
             // ラベルは操作を奪わないので、下のテキスト欄はそのままクリック・入力できる。
-            EditorGUI.LabelField(new Rect(rect.x + 2f, rect.y, rect.width - 4f, rect.height), placeholder, style);
+            // GUI.Label にしているのは ● と同じ理由で、欄の出入りで ID をずらさないため。
+            GUI.Label(new Rect(rect.x + 2f, rect.y, rect.width - 4f, rect.height), placeholder, style);
         }
 
         /// <summary>

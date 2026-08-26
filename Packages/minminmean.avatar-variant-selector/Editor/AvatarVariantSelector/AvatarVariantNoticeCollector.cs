@@ -5,33 +5,44 @@ using UnityEngine;
 namespace MinMinMart.AvatarVariant.Editor
 {
     /// <summary>
-    /// 設定がビルド前に破綻していないかを調べる。
+    /// Inspector の通知欄に出す内容を集める。
     ///
-    /// ビルド時に例外で止まることを編集中に先出しするのが役割。表示には関与せず、
-    /// 見つけた問題を文字列で返すだけにしてある。問題が無ければ null を返し、
-    /// 呼び出し側が描くコントロールの数を揃えられるようにする。
+    /// 出すのは 2 種類。ビルド時に例外で止まることを編集中に先出しする警告と、
+    /// 今の状態を伝えるだけのお知らせ。表示には関与せず、文字列を返すだけにしてある。
     /// </summary>
-    internal static class AvatarVariantValidator
+    internal static class AvatarVariantNoticeCollector
     {
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// 警告として出す内容をすべて集める。
         ///
-        /// 調べた箇所ごとに1つずつ足し、問題が無ければ null を入れる。
+        /// 見つかった問題だけを足す。問題が無かった箇所は何も残さない。
         ///
         /// <paramref name="root"/> が null のときは、基準が無いのでパスの生存確認を飛ばす。
         /// </summary>
-        internal static List<string> CollectProblems(AvatarVariantSet set, GameObject root)
+        internal static List<string> CollectProblems(AvatarVariantSet set, GameObject root, string blueprintId)
         {
             List<string> problems = new List<string>();
+
+            // アップロード先が決まっていないと、ビルドしても PipelineManager の指定のまま上がる。
+            // 止めはしないが、意図しないアップロードになりやすいので先に知らせる。
+            if (set.Variants.All(v => v == null))
+            {
+                problems.Add(LocalizeDict.warn_no_variants);
+            }
+            else if (set.ResolveForBuild(blueprintId, out bool _) == null)
+            {
+                problems.Add(LocalizeDict.warn_no_selection);
+            }
 
             List<string> ids = set.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
             Transform rootT = root != null ? root.transform : null;
 
             foreach (AvatarVariantDefinition v in set.Variants.Where(v => v != null))
             {
-                problems.Add(CheckDuplicateId(v, ids));
+                string duplicateId = CheckDuplicateId(v, ids);
+                if (duplicateId != null) problems.Add(duplicateId);
 
                 if (rootT == null) continue;
 
@@ -42,6 +53,22 @@ namespace MinMinMart.AvatarVariant.Editor
 
 
             return problems;
+        }
+
+        /// <summary>
+        /// 今の状態を伝えるだけのお知らせを集める。問題ではないので警告とは分けて返す。
+        /// </summary>
+        internal static List<string> CollectInfos(AvatarVariantSet set)
+        {
+            List<string> infos = new List<string>();
+
+            AvatarVariantDefinition pending = set.PendingVariant;
+            if (pending != null)
+            {
+                infos.Add(string.Format(LocalizeDict.pending_banner, pending.Name));
+            }
+
+            return infos;
         }
 
         /// <summary>
@@ -58,7 +85,7 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// 削除対象を 1 件ずつ確かめる。見つかるものは null。
+        /// 削除対象を 1 件ずつ確かめる。見つからないものだけを返す。
         /// </summary>
         private static List<string> CheckRemovePaths(AvatarVariantDefinition variant, Transform root)
         {
@@ -66,15 +93,16 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (string path in variant.RemoveObjectPaths.Where(p => !string.IsNullOrEmpty(p)))
             {
-                bool missing = AvatarVariantSet.FindByPath(root, path) == null;
-                problems.Add(missing ? string.Format(LocalizeDict.warn_remove_missing, variant.Name, path) : null);
+                if (AvatarVariantSet.FindByPath(root, path) != null) continue;
+
+                problems.Add(string.Format(LocalizeDict.warn_remove_missing, variant.Name, path));
             }
 
             return problems;
         }
 
         /// <summary>
-        /// マテリアルの差し替えを 1 件ずつ確かめる。差し替えられるものは null。
+        /// マテリアルの差し替えを 1 件ずつ確かめる。差し替えられないものだけを返す。
         /// </summary>
         private static List<string> CheckMaterialOverrides(AvatarVariantDefinition variant, Transform root)
         {
@@ -94,17 +122,13 @@ namespace MinMinMart.AvatarVariant.Editor
                     problems.Add(string.Format(LocalizeDict.warn_material_slot,
                         variant.Name, mo.RendererPath, mo.Slot, r.sharedMaterials.Length));
                 }
-                else
-                {
-                    problems.Add(null);
-                }
             }
 
             return problems;
         }
 
         /// <summary>
-        /// ブレンドシェイプの設定を 1 件ずつ確かめる。設定できるものは null。
+        /// ブレンドシェイプの設定を 1 件ずつ確かめる。設定できないものだけを返す。
         /// </summary>
         private static List<string> CheckBlendShapes(AvatarVariantDefinition variant, Transform root)
         {
@@ -126,10 +150,6 @@ namespace MinMinMart.AvatarVariant.Editor
                 else if (smr.sharedMesh.GetBlendShapeIndex(bs.ShapeName) < 0)
                 {
                     problems.Add(string.Format(LocalizeDict.warn_shape_missing, variant.Name, bs.RendererPath, bs.ShapeName));
-                }
-                else
-                {
-                    problems.Add(null);
                 }
             }
 
