@@ -306,13 +306,16 @@ namespace MinMinMart.AvatarVariant.Editor
 
 
         /// <summary>
-        /// 切り替えボタンの書式。新規か上書きか、選択中かどうかで 4 通り。
+        /// 切り替えボタンの書式。
+        ///
+        /// 選択中の文言は新規でも上書きでも共通。選択中でないときだけ、
+        /// これから何が起きるかが変わるので新規と上書きで分ける。
         /// </summary>
         private static string SelectLabel(bool isNew, bool isCurrent)
         {
-            if (isNew) return isCurrent ? LocalizeDict.pending_label : LocalizeDict.mark_new_upload;
+            if (isCurrent) return LocalizeDict.switch_current;
 
-            return isCurrent ? LocalizeDict.switch_current : LocalizeDict.switch_to;
+            return isNew ? LocalizeDict.mark_new_upload : LocalizeDict.switch_to;
         }
 
 

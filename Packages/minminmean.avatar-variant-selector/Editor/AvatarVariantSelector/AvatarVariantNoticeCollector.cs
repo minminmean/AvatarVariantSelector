@@ -65,7 +65,7 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantDefinition pending = profile.PendingVariant;
             if (pending != null)
             {
-                infos.Add(string.Format(LocalizeDict.pending_banner, pending.Name));
+                infos.Add(LocalizeDict.pending_banner);
             }
 
             return infos;
