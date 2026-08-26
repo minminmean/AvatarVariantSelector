@@ -47,8 +47,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string delete_dialog_cancel;
         public string operations_header;
         public string add_variant;
-        public string apply_changes;
-        public string unapplied_changes;
         public string copy_suffix;
 
         public string op_remove;
@@ -67,7 +65,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string outside_avatar_drop;
         public string allow_unmatched;
 
-        public string warn_name_required;
         public string warn_duplicate_id;
         public string warn_remove_missing;
         public string warn_material_missing;

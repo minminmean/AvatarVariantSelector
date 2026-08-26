@@ -34,6 +34,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         if (GUILayout.Button("−", GUILayout.Width(22)))
                         {
                             paths.DeleteArrayElementAtIndex(i);
+                            AvatarVariantSetSaver.Request();
                             return;
                         }
                     }
@@ -66,16 +67,27 @@ namespace MinMinMart.AvatarVariant.Editor
                             if (GUILayout.Button("−", GUILayout.Width(22)))
                             {
                                 list.DeleteArrayElementAtIndex(i);
+                                AvatarVariantSetSaver.Request();
                                 return;
                             }
                         }
 
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Slot"), new GUIContent(LocalizeDict.field_slot));
+                        SerializedProperty slotProp = e.FindPropertyRelative("Slot");
+                        AvatarVariantSetSaver.NameWatchedField(slotProp.propertyPath);
+                        EditorGUILayout.PropertyField(slotProp, new GUIContent(LocalizeDict.field_slot));
+
+                        // 差し替え先の指定は 1 回きりの操作なので、その場で確定させる。
+                        EditorGUI.BeginChangeCheck();
                         EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(LocalizeDict.field_material));
+                        if (EditorGUI.EndChangeCheck()) AvatarVariantSetSaver.Request();
                     }
                 }
 
-                if (GUILayout.Button(LocalizeDict.add_entry)) list.arraySize++;
+                if (GUILayout.Button(LocalizeDict.add_entry))
+                {
+                    list.arraySize++;
+                    AvatarVariantSetSaver.Request();
+                }
             }
         }
 
@@ -103,16 +115,23 @@ namespace MinMinMart.AvatarVariant.Editor
                             if (GUILayout.Button("−", GUILayout.Width(22)))
                             {
                                 list.DeleteArrayElementAtIndex(i);
+                                AvatarVariantSetSaver.Request();
                                 return;
                             }
                         }
 
                         DrawShapePopup(e.FindPropertyRelative("ShapeName"), pathProp, root);
-                        EditorGUILayout.Slider(e.FindPropertyRelative("Value"), 0f, 100f, new GUIContent(LocalizeDict.field_value));
+                        SerializedProperty valueProp = e.FindPropertyRelative("Value");
+                        AvatarVariantSetSaver.NameWatchedField(valueProp.propertyPath);
+                        EditorGUILayout.Slider(valueProp, 0f, 100f, new GUIContent(LocalizeDict.field_value));
                     }
                 }
 
-                if (GUILayout.Button(LocalizeDict.add_entry)) list.arraySize++;
+                if (GUILayout.Button(LocalizeDict.add_entry))
+                {
+                    list.arraySize++;
+                    AvatarVariantSetSaver.Request();
+                }
             }
         }
 
@@ -152,6 +171,7 @@ namespace MinMinMart.AvatarVariant.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 nameProp.stringValue = picked == 0 ? "" : names[picked];
+                AvatarVariantSetSaver.Request();
             }
         }
     }

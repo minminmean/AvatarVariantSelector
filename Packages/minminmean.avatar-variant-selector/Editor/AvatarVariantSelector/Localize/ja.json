@@ -31,8 +31,6 @@
     "delete_dialog_message": "「{0}」の設定を削除します。（Undo で戻せます）",
     "delete_dialog_cancel": "やめる",
     "operations_header": "このバリアントをビルドするときの操作",
-    "unapplied_changes": "未適用の変更があります。「適用」を押すと設定アセットに保存されます。",
-    "apply_changes": "適用",
     "add_variant": "＋ バリアントを追加",
     "copy_suffix": " のコピー",
 
@@ -52,7 +50,6 @@
     "outside_avatar_drop": "[Avatar Variant] '{0}' はアバターの外にあるため追加しませんでした。",
     "allow_unmatched": "未選択でもビルドを許可",
 
-    "warn_name_required": "名前が未入力のバリアントがあります。名前を入れるまで切り替えの一覧に出ません。",
     "warn_duplicate_id": "Blueprint ID '{0}' が複数のバリアントで重複しています。",
     "warn_remove_missing": "「{0}」の削除対象 '{1}' が見つかりません。ビルド時にエラーになります。",
     "warn_material_missing": "「{0}」のマテリアル差し替え: '{1}' が見つからないか Renderer がありません。",

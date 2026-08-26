@@ -3,6 +3,7 @@ using System.Linq;
 using MinMinMart.AvatarVariant;
 using MinMinMart.AvatarVariant.Editor;
 using nadena.dev.ndmf;
+using UnityEditor;
 using UnityEngine;
 
 [assembly: ExportsPlugin(typeof(AvatarVariantPlugin))]
@@ -56,6 +57,9 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 throw new System.Exception(string.Format(LocalizeDict.build_no_set, root.name));
             }
+
+            // 編集中はディスクに書かず変更済みの印だけ付けているので、ここで書き出す。
+            AvatarVariantSetSaver.Save(set);
 
             string blueprintId = GetBlueprintId(root);
             AvatarVariantDefinition variant = set.ResolveForBuild(blueprintId, out bool viaPending);

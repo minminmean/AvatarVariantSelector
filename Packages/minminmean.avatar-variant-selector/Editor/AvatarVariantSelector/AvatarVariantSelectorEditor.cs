@@ -26,16 +26,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
-        // 「適用」を押した時点のバリアント名。切り替えボタンの表示にはこれを使う。
-        // 入力のたびにボタンが増減すると IMGUI のコントロール ID が後ろへずれ、
-        // 入力中のテキスト欄からフォーカスが外れてしまうため。
-        private readonly List<string> _appliedNames = new List<string>();
 
-        private void OnEnable()
-        {
-            // 対象が変わったので取り直す。
-            _appliedNames.Clear();
-        }
 
         public override void OnInspectorGUI()
         {
@@ -70,45 +61,30 @@ namespace MinMinMart.AvatarVariant.Editor
             SerializedObject setSo = new SerializedObject(set);
             setSo.Update();
 
-            // 追加・削除はボタン操作なので入力中ではない。件数が動いたときだけ取り直す。
-            if (_appliedNames.Count != setSo.FindProperty("Variants").arraySize)
-            {
-                CaptureNames(setSo);
-            }
-
             DrawStatus(set, root, pm);
             EditorGUILayout.Space();
             DrawPendingBanner(set);
             DrawSwitcher(set, pm);
             EditorGUILayout.Space();
-            DrawNotices(set, setSo, root);
+            DrawNotices(set, root);
             EditorGUILayout.Space();
 
             DrawVariants(setSo, root, pm);
-            bool apply = DrawApplyButton(set, setSo);
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(setSo.FindProperty("AllowUnmatchedBlueprintId"),
                 new GUIContent(LocalizeDict.allow_unmatched));
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
-            // GUI.changed を見ると折りたたみや「適用」自身の押下まで拾ってしまう。
+            // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。
             if (setSo.ApplyModifiedProperties())
             {
                 // ここではディスクに書かない。1 文字ごとに書き出すと再インポートが走って重い。
-                // 変更済みの印だけ付けておき、実際に書くのは「適用」を押したとき。
+                // 変更済みの印だけ付けておき、書き出しは AvatarVariantSetSaver のきっかけに任せる。
                 EditorUtility.SetDirty(set);
             }
 
-            if (apply)
-            {
-                // ボタンを描いた時点では、このフレームの入力がまだ setSo の中にしかない。
-                // 反映を終えたここで確定させる。
-                CaptureNames(setSo);
-                AssetDatabase.SaveAssetIfDirty(set);
-
-                // 一覧が変わるので、入力欄からフォーカスを外しておく。
-                GUI.FocusControl(null);
-            }
+            AvatarVariantSetSaver.RequestOnFocusLost();
+            AvatarVariantSetSaver.SaveIfRequested(set);
         }
 
         // ---------- バリアント一覧 ----------
@@ -153,7 +129,9 @@ namespace MinMinMart.AvatarVariant.Editor
                     expanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
                     FoldoutState.SetExpanded(variant, expanded);
                     DrawCurrentMarker(markRect, isCurrent);
+                    AvatarVariantSetSaver.NameWatchedField(nameProp.propertyPath);
                     DrawFieldWithPlaceholder(nameRect, nameProp, LocalizeDict.placeholder_name);
+                    AvatarVariantSetSaver.NameWatchedField(idProp.propertyPath);
                     DrawFieldWithPlaceholder(idRect, idProp, LocalizeDict.placeholder_id);
 
                     bool duplicate = GUI.Button(dupRect, LocalizeDict.duplicate);
@@ -266,12 +244,11 @@ namespace MinMinMart.AvatarVariant.Editor
                     AvatarVariantDefinition variant = set.Variants[i];
                     if (variant == null) continue;
 
-                    // 表示に使うのは「適用」時点の名前。入力中の値は反映しない。
-                    string name = i < _appliedNames.Count ? _appliedNames[i] : variant.Name;
+                    string name = variant.Name;
 
-                    // 名前が空だとボタンの文言が「 を新規アップロード対象にする」のように
-                    // 主語を欠いてしまう。未入力であることは検証の警告で知らせる。
-                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    // 名前が空のままでもボタンは出す。そのままだと文言が主語を欠くので、
+                    // 未入力だと分かる差し込み文字に置き換える。
+                    if (string.IsNullOrWhiteSpace(name)) name = LocalizeDict.asset_unnamed;
 
                     // ID が未採番のバリアントは、切り替えではなく新規アップロードの対象として選ぶ。
                     if (string.IsNullOrEmpty(variant.BlueprintId))
@@ -310,92 +287,40 @@ namespace MinMinMart.AvatarVariant.Editor
         /// 押せないときも必ず描く。ボタン自体が出入りすると、それがコントロール ID を
         /// ずらしてしまい、防ごうとしているフォーカス外れをこのボタンが起こしてしまう。
         /// </summary>
-        private bool DrawApplyButton(AvatarVariantSet set, SerializedObject setSo)
-        {
-            using (new EditorGUI.DisabledScope(!HasPendingChanges(set, setSo)))
-            {
-                return GUILayout.Button(LocalizeDict.apply_changes);
-            }
-        }
 
-        /// <summary>
-        /// 「適用」で確定させるべき変更が残っているか。通知とボタンの活性で同じ判定を使う。
-        /// </summary>
-        private bool HasPendingChanges(AvatarVariantSet set, SerializedObject setSo)
-        {
-            return HasUnappliedNames(setSo) || EditorUtility.IsDirty(set);
-        }
 
-        private void CaptureNames(SerializedObject setSo)
-        {
-            SerializedProperty variants = setSo.FindProperty("Variants");
 
-            _appliedNames.Clear();
-            for (int i = 0; i < variants.arraySize; i++)
-            {
-                _appliedNames.Add(variants.GetArrayElementAtIndex(i).FindPropertyRelative("Name").stringValue);
-            }
-        }
-
-        private bool HasUnappliedNames(SerializedObject setSo)
-        {
-            SerializedProperty variants = setSo.FindProperty("Variants");
-            if (_appliedNames.Count != variants.arraySize) return true;
-
-            for (int i = 0; i < variants.arraySize; i++)
-            {
-                string current = variants.GetArrayElementAtIndex(i).FindPropertyRelative("Name").stringValue;
-                if (current != _appliedNames[i]) return true;
-            }
-
-            return false;
-        }
 
         // ---------- 検証 ----------
 
         /// <summary>
-        /// 警告と適用状態を 1 つの箱にまとめて出す。
-        ///
-        /// 箱は名前の入力欄より前に描かれる。HelpBox は内部の EditorGUI.LabelField で
-        /// コントロール ID を確保するため、出したり消したりすると確保数が変わり、
-        /// 入力欄の ID がずれて入力中にフォーカスが外れてしまう。そこで中身が無いときも
-        /// 場所取りだけは描き、見た目にだけ現れないようにしている。
-        /// 行数が増減して高さが変わるぶんには影響しない。
+        /// WarnとInfoを書き出す。
+        /// Warnの内容はAvatarVariantValidatorに責務がある。
         /// </summary>
-        private void DrawNotices(AvatarVariantSet set, SerializedObject setSo, GameObject root)
+        private void DrawNotices(AvatarVariantSet set, GameObject root)
         {
-            List<string> messages = new List<string>();
-
-            // 名前の未入力は「適用」済みの内容だけで判断する。
-            // 入力途中の空欄で警告を出すと、消すために入力を急かす表示になってしまう。
-            if (_appliedNames.Any(string.IsNullOrWhiteSpace))
-            {
-                messages.Add(LocalizeDict.warn_name_required);
-            }
-
-            messages.AddRange(AvatarVariantValidator.CollectProblems(set, root));
-
-            bool hasProblem = messages.Count > 0;
-            if (HasPendingChanges(set, setSo))
-            {
-                messages.Add(LocalizeDict.unapplied_changes);
-            }
-
-            if (messages.Count == 0)
-            {
-                // 出すものが無くても、同じ経路で高さ 0 の場所取りだけ描いておく。
-                // HelpBox は内部で EditorGUI.LabelField を通るので、こちらも同じ
-                // オーバーロードを呼べば、確保されるコントロール ID の数が揃う。
-                EditorGUILayout.LabelField(GUIContent.none, GUIContent.none, GUIStyle.none,
-                    GUILayout.Height(0));
-                return;
-            }
-
-            EditorGUILayout.HelpBox(string.Join("\n", messages),
-                hasProblem ? MessageType.Warning : MessageType.Info);
+            List<string> warnMessages = AvatarVariantValidator.CollectProblems(set, root);
+            DrawHelpBoxs(warnMessages, MessageType.Warning);
         }
 
         // ---------- 補助 ----------
+
+        // 渡されたList<string>でHelpBoxを描画する。
+        // フォーカスズレを防ぐため、nullを受け取った時は高さゼロの空ラベルを描画する。
+        private static void DrawHelpBoxs(List<string> messages, MessageType messageType)
+        {
+            foreach (string message in messages)
+            {
+                if (!string.IsNullOrEmpty(message))
+                {
+                    EditorGUILayout.HelpBox(message, messageType);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField(GUIContent.none, GUIContent.none, GUIStyle.none, GUILayout.Height(0));  
+                }
+            }
+        }
 
         private static void DrawCurrentMarker(Rect rect, bool isCurrent)
         {

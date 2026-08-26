@@ -31,6 +31,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (picked == null)
                 {
                     pathProp.stringValue = "";
+                    AvatarVariantSetSaver.Request();
                 }
                 else
                 {
@@ -42,6 +43,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     else
                     {
                         pathProp.stringValue = newPath;
+                        AvatarVariantSetSaver.Request();
                     }
                 }
             }
@@ -83,6 +85,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 paths.arraySize++;
                 paths.GetArrayElementAtIndex(paths.arraySize - 1).stringValue = path;
+                AvatarVariantSetSaver.Request();
             }
 
             e.Use();
