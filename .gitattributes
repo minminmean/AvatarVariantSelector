@@ -1,0 +1,3 @@
+# 改行コードは LF に統一する。
+# 各自の core.autocrlf の設定に左右されず、リポジトリにも作業ツリーにも LF が入る。
+* text=auto eol=lf
