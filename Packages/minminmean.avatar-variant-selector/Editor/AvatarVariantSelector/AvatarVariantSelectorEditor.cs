@@ -297,8 +297,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
         // ---------- 補助 ----------
 
-        // 渡されたList<string>でHelpBoxを描画する。
-        // フォーカスズレを防ぐため、nullを受け取った時は高さゼロの空ラベルを描画する。
+        // 渡された List<string> で HelpBox を描画する。
+        // フォーカスズレを防ぐため、null を受け取った時もコントロール ID だけは確保する。
+        // 場所取りを描くと中身が無い分の高さが積み上がって隙間になるので、ID だけ進める。
         private static void DrawHelpBoxs(List<string> messages, MessageType messageType)
         {
             foreach (string message in messages)
@@ -309,7 +310,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
                 else
                 {
-                    EditorGUILayout.LabelField(GUIContent.none, GUIContent.none, GUIStyle.none, GUILayout.Height(0));  
+                    GUIUtility.GetControlID(FocusType.Passive);
                 }
             }
         }
