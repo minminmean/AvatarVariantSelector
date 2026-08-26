@@ -9,6 +9,7 @@
     "com.vrchat.avatars": ">=3.7.0",
     "nadena.dev.ndmf": ">=1.13.1"
   },
+  "documentationUrl": "https://github.com/minminmean/AvatarVariantSelector",
   "author": {
     "name": "MinMinMean",
     "email": "duralumin0221@gmail.com",
