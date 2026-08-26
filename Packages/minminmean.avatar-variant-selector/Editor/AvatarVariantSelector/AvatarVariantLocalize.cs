@@ -34,7 +34,6 @@ namespace MinMinMart.AvatarVariant.Editor
         public string mark_new_upload;
         public string pending_label;
         public string pending_banner;
-        public string cancel_pending;
 
         public string variants_header;
         public string variant_unnamed;

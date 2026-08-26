@@ -219,12 +219,6 @@ namespace MinMinMart.AvatarVariant.Editor
             if (pending == null) return;
 
             EditorGUILayout.HelpBox(string.Format(LocalizeDict.pending_banner, pending.Name), MessageType.Info);
-
-            if (GUILayout.Button(LocalizeDict.cancel_pending, GUILayout.Width(110)))
-            {
-                AvatarVariantSwitcher.CancelPending(set);
-            }
-
             EditorGUILayout.Space();
         }
 
@@ -247,29 +241,19 @@ namespace MinMinMart.AvatarVariant.Editor
                     // 未入力だと分かる差し込み文字に置き換える。
                     if (string.IsNullOrWhiteSpace(name)) name = LocalizeDict.asset_unnamed;
 
-                    // ID が未採番のバリアントは、切り替えではなく新規アップロードの対象として選ぶ。
-                    if (string.IsNullOrEmpty(variant.BlueprintId))
-                    {
-                        bool isPending = set.PendingVariant == variant;
-                        using (new EditorGUI.DisabledScope(isPending))
-                        {
-                            string label = string.Format(isPending ? LocalizeDict.pending_label : LocalizeDict.mark_new_upload, name);
-                            if (GUILayout.Button(label, GUILayout.Height(26)))
-                            {
-                                AvatarVariantSwitcher.MarkPending(set, pm, variant);
-                            }
-                        }
+                    // 押す操作は 1 つ。上書きか新規かは Blueprint ID の有無で決まるので、
+                    // 文言だけを変えて、どちらになるか分かるようにする。
+                    bool isNew = string.IsNullOrEmpty(variant.BlueprintId);
+                    bool isCurrent = isNew
+                        ? set.PendingVariant == variant
+                        : variant.BlueprintId == pm.blueprintId;
 
-                        continue;
-                    }
-
-                    bool isCurrent = variant.BlueprintId == pm.blueprintId;
                     using (new EditorGUI.DisabledScope(isCurrent))
                     {
-                        string label = string.Format(isCurrent ? LocalizeDict.switch_current : LocalizeDict.switch_to, name);
+                        string label = string.Format(SelectLabel(isNew, isCurrent), name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
-                            AvatarVariantSwitcher.SwitchTo(pm, variant);
+                            AvatarVariantSwitcher.SwitchTo(set, pm, variant);
                         }
                     }
                 }
@@ -286,6 +270,17 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
 
 
+
+
+        /// <summary>
+        /// 切り替えボタンの書式。新規か上書きか、選択中かどうかで 4 通り。
+        /// </summary>
+        private static string SelectLabel(bool isNew, bool isCurrent)
+        {
+            if (isNew) return isCurrent ? LocalizeDict.pending_label : LocalizeDict.mark_new_upload;
+
+            return isCurrent ? LocalizeDict.switch_current : LocalizeDict.switch_to;
+        }
 
 
         // ---------- 検証 ----------

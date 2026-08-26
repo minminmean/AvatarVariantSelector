@@ -15,49 +15,46 @@ namespace MinMinMart.AvatarVariant.Editor
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
-        /// 既存のアップロード先へ切り替える。
+        /// アップロード先をこのバリアントに切り替える。
+        ///
+        /// 上書きになるか新規になるかは、バリアントの Blueprint ID の有無だけで決まる。
+        /// 入っていればその ID を PipelineManager に書き、そのアバターへ上書きアップロードになる。
+        /// 空欄なら PipelineManager の ID も空にして、新規アバターとしてアップロードさせる。
         /// </summary>
-        internal static void SwitchTo(VRC.Core.PipelineManager pm, AvatarVariantDefinition variant)
-        {
-            WriteBlueprintId(pm, variant.BlueprintId);
-            Debug.Log(string.Format(LocalizeDict.log_switched, variant.Name, variant.BlueprintId));
-        }
-
-        /// <summary>
-        /// バリアントを新規アップロード対象にする。
-        /// 既存アバターを上書きしないよう、PipelineManager の ID も空にする。
-        /// </summary>
-        internal static void MarkPending(AvatarVariantSet set, VRC.Core.PipelineManager pm,
+        internal static void SwitchTo(AvatarVariantSet set, VRC.Core.PipelineManager pm,
             AvatarVariantDefinition variant)
         {
-            Undo.RecordObject(set, "Mark pending variant");
-            if (string.IsNullOrEmpty(variant.Key))
+            bool isNew = string.IsNullOrEmpty(variant.BlueprintId);
+
+            Undo.RecordObject(set, "Switch variant");
+
+            if (isNew)
             {
-                variant.Key = System.Guid.NewGuid().ToString("N");
+                // ID が空のバリアントは ID で見分けられない。どれを選んだかを控えておき、
+                // 採番されたら PendingBlueprintIdWatcher がこのバリアントへ書き写す。
+                if (string.IsNullOrEmpty(variant.Key))
+                {
+                    variant.Key = System.Guid.NewGuid().ToString("N");
+                }
+
+                set.PendingVariantKey = variant.Key;
+            }
+            else
+            {
+                // ID で決まるので控えは要らない。残すとバナーが古い選択を指したままになる。
+                set.PendingVariantKey = "";
             }
 
-            set.PendingVariantKey = variant.Key;
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssetIfDirty(set);
 
-            if (pm != null && !string.IsNullOrEmpty(pm.blueprintId))
-            {
-                WriteBlueprintId(pm, "");
-            }
+            WriteBlueprintId(pm, variant.BlueprintId);
 
-            Debug.Log(string.Format(LocalizeDict.log_marked_pending, variant.Name));
+            Debug.Log(isNew
+                ? string.Format(LocalizeDict.log_marked_pending, variant.Name)
+                : string.Format(LocalizeDict.log_switched, variant.Name, variant.BlueprintId));
         }
 
-        /// <summary>
-        /// 新規アップロード待ちの指定を取り消す。
-        /// </summary>
-        internal static void CancelPending(AvatarVariantSet set)
-        {
-            Undo.RecordObject(set, "Cancel pending variant");
-            set.PendingVariantKey = "";
-            EditorUtility.SetDirty(set);
-            AssetDatabase.SaveAssetIfDirty(set);
-        }
 
         /// <summary>
         /// PipelineManager の Blueprint ID を書き換える。

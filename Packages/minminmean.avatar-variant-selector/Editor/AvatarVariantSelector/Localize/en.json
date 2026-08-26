@@ -19,7 +19,6 @@
     "mark_new_upload": "Upload {0} as a new avatar",
     "pending_label": "{0} (awaiting new upload)",
     "pending_banner": "'{0}' is queued to be uploaded as a new avatar.\nBuilding and uploading now creates a new avatar from this variant.\nThe assigned blueprint ID is written back to this variant and saved automatically.",
-    "cancel_pending": "Cancel",
 
     "variants_header": "Variants ({0})",
     "variant_unnamed": "Variant {0}",
