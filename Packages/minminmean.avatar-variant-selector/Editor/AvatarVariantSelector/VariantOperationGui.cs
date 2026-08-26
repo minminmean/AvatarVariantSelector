@@ -12,7 +12,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// </summary>
     internal static class VariantOperationGui
     {
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// 削除するオブジェクトの一覧。
@@ -20,7 +20,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void DrawRemoveList(SerializedProperty paths, Transform root)
         {
             bool expanded = FoldoutState.GetExpanded(paths);
-            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_remove, paths.arraySize), true);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(LocalizeDict.op_remove, paths.arraySize), true);
             FoldoutState.SetExpanded(paths, expanded);
             if (!expanded) return;
 
@@ -49,7 +49,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void DrawMaterialList(SerializedProperty list, Transform root)
         {
             bool expanded = FoldoutState.GetExpanded(list);
-            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_material, list.arraySize), true);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(LocalizeDict.op_material, list.arraySize), true);
             FoldoutState.SetExpanded(list, expanded);
             if (!expanded) return;
 
@@ -70,12 +70,12 @@ namespace MinMinMart.AvatarVariant.Editor
                             }
                         }
 
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Slot"), new GUIContent(T.field_slot));
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(T.field_material));
+                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Slot"), new GUIContent(LocalizeDict.field_slot));
+                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(LocalizeDict.field_material));
                     }
                 }
 
-                if (GUILayout.Button(T.add_entry)) list.arraySize++;
+                if (GUILayout.Button(LocalizeDict.add_entry)) list.arraySize++;
             }
         }
 
@@ -85,7 +85,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void DrawBlendShapeList(SerializedProperty list, Transform root)
         {
             bool expanded = FoldoutState.GetExpanded(list);
-            expanded = EditorGUILayout.Foldout(expanded, string.Format(T.op_blendshape, list.arraySize), true);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(LocalizeDict.op_blendshape, list.arraySize), true);
             FoldoutState.SetExpanded(list, expanded);
             if (!expanded) return;
 
@@ -108,11 +108,11 @@ namespace MinMinMart.AvatarVariant.Editor
                         }
 
                         DrawShapePopup(e.FindPropertyRelative("ShapeName"), pathProp, root);
-                        EditorGUILayout.Slider(e.FindPropertyRelative("Value"), 0f, 100f, new GUIContent(T.field_value));
+                        EditorGUILayout.Slider(e.FindPropertyRelative("Value"), 0f, 100f, new GUIContent(LocalizeDict.field_value));
                     }
                 }
 
-                if (GUILayout.Button(T.add_entry)) list.arraySize++;
+                if (GUILayout.Button(LocalizeDict.add_entry)) list.arraySize++;
             }
         }
 
@@ -128,18 +128,18 @@ namespace MinMinMart.AvatarVariant.Editor
             if (mesh == null || mesh.blendShapeCount == 0)
             {
                 // 選択肢を出せる対象が無いときは、既存の値を編集できるよう素のテキスト欄にする。
-                EditorGUILayout.PropertyField(nameProp, new GUIContent(T.field_shape));
+                EditorGUILayout.PropertyField(nameProp, new GUIContent(LocalizeDict.field_shape));
                 return;
             }
 
-            List<string> names = new List<string>(mesh.blendShapeCount + 1) { T.shape_none };
+            List<string> names = new List<string>(mesh.blendShapeCount + 1) { LocalizeDict.shape_none };
             for (int i = 0; i < mesh.blendShapeCount; i++) names.Add(mesh.GetBlendShapeName(i));
 
             int current = names.IndexOf(nameProp.stringValue);
             if (current < 0 && !string.IsNullOrEmpty(nameProp.stringValue))
             {
                 // メッシュに無い名前でも、黙って消さずに見える形で残す。
-                names.Add(nameProp.stringValue + T.shape_missing_suffix);
+                names.Add(nameProp.stringValue + LocalizeDict.shape_missing_suffix);
                 current = names.Count - 1;
             }
             else if (current < 0)
@@ -148,7 +148,7 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             EditorGUI.BeginChangeCheck();
-            int picked = EditorGUILayout.Popup(T.field_shape, current, names.ToArray());
+            int picked = EditorGUILayout.Popup(LocalizeDict.field_shape, current, names.ToArray());
             if (EditorGUI.EndChangeCheck())
             {
                 nameProp.stringValue = picked == 0 ? "" : names[picked];

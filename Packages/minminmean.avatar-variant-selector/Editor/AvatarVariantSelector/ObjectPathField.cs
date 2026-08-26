@@ -11,7 +11,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// </summary>
     internal static class ObjectPathField
     {
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// パス 1 件分の編集欄。
@@ -37,7 +37,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     string newPath = AvatarVariantSet.GetPath(root, picked.transform);
                     if (string.IsNullOrEmpty(newPath))
                     {
-                        Debug.LogWarning(string.Format(T.outside_avatar_pick, picked.name));
+                        Debug.LogWarning(string.Format(LocalizeDict.outside_avatar_pick, picked.name));
                     }
                     else
                     {
@@ -50,7 +50,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             GUIStyle style = new GUIStyle(EditorStyles.miniLabel);
             style.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
-            EditorGUILayout.LabelField(string.Format(T.path_broken, path), style);
+            EditorGUILayout.LabelField(string.Format(LocalizeDict.path_broken, path), style);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void DrawDropArea(SerializedProperty paths, Transform root)
         {
             Rect rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
-            GUI.Box(rect, T.drop_area, EditorStyles.helpBox);
+            GUI.Box(rect, LocalizeDict.drop_area, EditorStyles.helpBox);
 
             Event e = Event.current;
             if (!rect.Contains(e.mousePosition)) return;
@@ -77,7 +77,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 string path = AvatarVariantSet.GetPath(root, go.transform);
                 if (string.IsNullOrEmpty(path))
                 {
-                    Debug.LogWarning(string.Format(T.outside_avatar_drop, go.name));
+                    Debug.LogWarning(string.Format(LocalizeDict.outside_avatar_drop, go.name));
                     continue;
                 }
 

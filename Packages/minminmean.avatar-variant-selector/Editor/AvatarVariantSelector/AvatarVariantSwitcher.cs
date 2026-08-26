@@ -12,7 +12,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// </summary>
     internal static class AvatarVariantSwitcher
     {
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// 既存のアップロード先へ切り替える。
@@ -20,7 +20,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void SwitchTo(VRC.Core.PipelineManager pm, AvatarVariantDefinition variant)
         {
             WriteBlueprintId(pm, variant.BlueprintId);
-            Debug.Log(string.Format(T.log_switched, variant.Name, variant.BlueprintId));
+            Debug.Log(string.Format(LocalizeDict.log_switched, variant.Name, variant.BlueprintId));
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 WriteBlueprintId(pm, "");
             }
 
-            Debug.Log(string.Format(T.log_marked_pending, variant.Name));
+            Debug.Log(string.Format(LocalizeDict.log_marked_pending, variant.Name));
         }
 
         /// <summary>

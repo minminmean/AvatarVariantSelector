@@ -30,7 +30,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public override string QualifiedName => "minminmart.avatar-variant";
         public override string DisplayName => "Avatar Variant";
 
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         protected override void Configure()
         {
@@ -46,7 +46,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (selectors.Length > 1)
             {
-                throw new System.Exception(string.Format(T.build_multiple_selectors, root.name, selectors.Length));
+                throw new System.Exception(string.Format(LocalizeDict.build_multiple_selectors, root.name, selectors.Length));
             }
 
             AvatarVariantSelector selector = selectors[0];
@@ -54,7 +54,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (set == null)
             {
-                throw new System.Exception(string.Format(T.build_no_set, root.name));
+                throw new System.Exception(string.Format(LocalizeDict.build_no_set, root.name));
             }
 
             string blueprintId = GetBlueprintId(root);
@@ -66,23 +66,23 @@ namespace MinMinMart.AvatarVariant.Editor
                 {
                     IEnumerable<string> known = set.Variants
                         .Where(v => v != null)
-                        .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? T.blueprint_id_unassigned : v.BlueprintId)}");
+                        .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
 
-                    string hint = string.IsNullOrEmpty(blueprintId) ? T.build_hint_new : T.build_hint_switch;
+                    string hint = string.IsNullOrEmpty(blueprintId) ? LocalizeDict.build_hint_new : LocalizeDict.build_hint_switch;
 
-                    throw new System.Exception(string.Format(T.build_cannot_resolve,
-                        string.IsNullOrEmpty(blueprintId) ? T.blueprint_id_unassigned : blueprintId,
+                    throw new System.Exception(string.Format(LocalizeDict.build_cannot_resolve,
+                        string.IsNullOrEmpty(blueprintId) ? LocalizeDict.blueprint_id_unassigned : blueprintId,
                         string.Join("\n", known),
                         hint));
                 }
 
-                Debug.LogWarning(T.build_allow_unmatched_warn);
+                Debug.LogWarning(LocalizeDict.build_allow_unmatched_warn);
             }
             else
             {
                 if (viaPending)
                 {
-                    Debug.Log(string.Format(T.build_via_pending, variant.Name));
+                    Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
                 }
 
                 ApplyVariant(variant, root);
@@ -119,7 +119,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     continue;
                 }
 
-                throw new System.Exception(string.Format(T.build_remove_missing, variant.Name, path));
+                throw new System.Exception(string.Format(LocalizeDict.build_remove_missing, variant.Name, path));
             }
 
             foreach (VariantMaterialOverride mo in variant.MaterialOverrides)
@@ -132,7 +132,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 Material[] mats = renderer.sharedMaterials;
                 if (mo.Slot < 0 || mo.Slot >= mats.Length)
                 {
-                    throw new System.Exception(string.Format(T.build_slot_out_of_range,
+                    throw new System.Exception(string.Format(LocalizeDict.build_slot_out_of_range,
                         variant.Name, mo.RendererPath, mo.Slot, mats.Length));
                 }
 
@@ -151,14 +151,14 @@ namespace MinMinMart.AvatarVariant.Editor
                 int index = mesh != null ? mesh.GetBlendShapeIndex(bs.ShapeName) : -1;
                 if (index < 0)
                 {
-                    throw new System.Exception(string.Format(T.build_shape_missing,
+                    throw new System.Exception(string.Format(LocalizeDict.build_shape_missing,
                         variant.Name, bs.RendererPath, bs.ShapeName));
                 }
 
                 renderer.SetBlendShapeWeight(index, bs.Value);
             }
 
-            Debug.Log(string.Format(T.build_done, variant.Name,
+            Debug.Log(string.Format(LocalizeDict.build_done, variant.Name,
                 removedPaths.Count, variant.MaterialOverrides.Count, variant.BlendShapeChanges.Count));
         }
 
@@ -174,13 +174,13 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (removedPaths.Any(p => path == p || path.StartsWith(p + "/"))) return null;
 
-                throw new System.Exception(string.Format(T.build_target_missing, variantName, path));
+                throw new System.Exception(string.Format(LocalizeDict.build_target_missing, variantName, path));
             }
 
             Renderer renderer = t.GetComponent<Renderer>();
             if (renderer == null)
             {
-                throw new System.Exception(string.Format(T.build_no_renderer, variantName, path));
+                throw new System.Exception(string.Format(LocalizeDict.build_no_renderer, variantName, path));
             }
 
             return renderer;

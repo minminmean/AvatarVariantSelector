@@ -12,7 +12,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// </summary>
     internal static class AvatarVariantValidator
     {
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// <paramref name="set"/> の問題を集める。問題が無ければ空のリスト。
@@ -27,7 +27,7 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (!string.IsNullOrEmpty(v.BlueprintId) && ids.Count(id => id == v.BlueprintId) > 1)
                 {
-                    problems.Add(string.Format(T.warn_duplicate_id, v.BlueprintId));
+                    problems.Add(string.Format(LocalizeDict.warn_duplicate_id, v.BlueprintId));
                 }
 
                 if (root == null) continue;
@@ -37,7 +37,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 {
                     if (AvatarVariantSet.FindByPath(rootT, path) == null)
                     {
-                        problems.Add(string.Format(T.warn_remove_missing, v.Name, path));
+                        problems.Add(string.Format(LocalizeDict.warn_remove_missing, v.Name, path));
                     }
                 }
 
@@ -47,11 +47,11 @@ namespace MinMinMart.AvatarVariant.Editor
                     Renderer r = t != null ? t.GetComponent<Renderer>() : null;
                     if (r == null)
                     {
-                        problems.Add(string.Format(T.warn_material_missing, v.Name, mo.RendererPath));
+                        problems.Add(string.Format(LocalizeDict.warn_material_missing, v.Name, mo.RendererPath));
                     }
                     else if (mo.Slot < 0 || mo.Slot >= r.sharedMaterials.Length)
                     {
-                        problems.Add(string.Format(T.warn_material_slot,
+                        problems.Add(string.Format(LocalizeDict.warn_material_slot,
                             v.Name, mo.RendererPath, mo.Slot, r.sharedMaterials.Length));
                     }
                 }
@@ -62,22 +62,22 @@ namespace MinMinMart.AvatarVariant.Editor
                     SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
                     if (smr == null || smr.sharedMesh == null)
                     {
-                        problems.Add(string.Format(T.warn_shape_no_renderer, v.Name, bs.RendererPath));
+                        problems.Add(string.Format(LocalizeDict.warn_shape_no_renderer, v.Name, bs.RendererPath));
                     }
                     else if (string.IsNullOrEmpty(bs.ShapeName))
                     {
-                        problems.Add(string.Format(T.warn_shape_unselected, v.Name, bs.RendererPath));
+                        problems.Add(string.Format(LocalizeDict.warn_shape_unselected, v.Name, bs.RendererPath));
                     }
                     else if (smr.sharedMesh.GetBlendShapeIndex(bs.ShapeName) < 0)
                     {
-                        problems.Add(string.Format(T.warn_shape_missing, v.Name, bs.RendererPath, bs.ShapeName));
+                        problems.Add(string.Format(LocalizeDict.warn_shape_missing, v.Name, bs.RendererPath, bs.ShapeName));
                     }
                 }
             }
 
             if (set.AllowUnmatchedBlueprintId)
             {
-                problems.Add(T.warn_allow_unmatched);
+                problems.Add(LocalizeDict.warn_allow_unmatched);
             }
 
             return problems;

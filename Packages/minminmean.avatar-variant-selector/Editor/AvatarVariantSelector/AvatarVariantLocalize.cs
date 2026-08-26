@@ -157,7 +157,7 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// 選択中の言語の辞書。
         /// </summary>
-        public static AvatarVariantLocalizeDictionary T
+        public static AvatarVariantLocalizeDictionary Dictionary
         {
             get
             {
@@ -176,7 +176,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public static void DrawLanguagePopup()
         {
             EditorGUI.BeginChangeCheck();
-            int picked = EditorGUILayout.Popup(T.language, LanguageIndex, LanguageNames);
+            int picked = EditorGUILayout.Popup(Dictionary.language, LanguageIndex, LanguageNames);
             if (EditorGUI.EndChangeCheck())
             {
                 LanguageIndex = picked;

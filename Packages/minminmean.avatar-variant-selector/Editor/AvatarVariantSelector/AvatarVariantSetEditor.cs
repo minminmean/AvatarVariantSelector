@@ -13,7 +13,7 @@ namespace MinMinMart.AvatarVariant.Editor
     [CustomEditor(typeof(AvatarVariantSet))]
     public class AvatarVariantSetEditor : UnityEditor.Editor
     {
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         public override void OnInspectorGUI()
         {
@@ -22,15 +22,15 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantLocalize.DrawLanguagePopup();
             EditorGUILayout.Space();
 
-            EditorGUILayout.HelpBox(T.asset_edit_hint, MessageType.Info);
+            EditorGUILayout.HelpBox(LocalizeDict.asset_edit_hint, MessageType.Info);
 
-            if (GUILayout.Button(T.asset_select_user))
+            if (GUILayout.Button(LocalizeDict.asset_select_user))
             {
                 SelectUser(set);
             }
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField(string.Format(T.variants_header, set.Variants.Count), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, set.Variants.Count), EditorStyles.boldLabel);
 
             using (new EditorGUI.DisabledScope(true))
             {
@@ -40,12 +40,12 @@ namespace MinMinMart.AvatarVariant.Editor
 
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
-                        EditorGUILayout.LabelField(string.IsNullOrEmpty(v.Name) ? T.asset_unnamed : v.Name,
+                        EditorGUILayout.LabelField(string.IsNullOrEmpty(v.Name) ? LocalizeDict.asset_unnamed : v.Name,
                             EditorStyles.boldLabel);
-                        EditorGUILayout.LabelField(T.blueprint_id,
-                            string.IsNullOrEmpty(v.BlueprintId) ? T.blueprint_id_unassigned : v.BlueprintId);
-                        EditorGUILayout.LabelField(T.asset_operations,
-                            string.Format(T.asset_operations_value,
+                        EditorGUILayout.LabelField(LocalizeDict.blueprint_id,
+                            string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId);
+                        EditorGUILayout.LabelField(LocalizeDict.asset_operations,
+                            string.Format(LocalizeDict.asset_operations_value,
                                 v.RemoveObjectPaths.Count, v.MaterialOverrides.Count, v.BlendShapeChanges.Count));
                     }
                 }
@@ -54,7 +54,7 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantDefinition pending = set.PendingVariant;
             if (pending != null)
             {
-                EditorGUILayout.HelpBox(string.Format(T.asset_pending, pending.Name), MessageType.Info);
+                EditorGUILayout.HelpBox(string.Format(LocalizeDict.asset_pending, pending.Name), MessageType.Info);
             }
         }
 
@@ -69,7 +69,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            Debug.LogWarning(T.asset_user_not_found);
+            Debug.LogWarning(LocalizeDict.asset_user_not_found);
         }
     }
 }

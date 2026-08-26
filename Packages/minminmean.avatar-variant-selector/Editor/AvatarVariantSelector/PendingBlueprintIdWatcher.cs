@@ -62,7 +62,7 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssetIfDirty(set);
 
-            Debug.Log(string.Format(AvatarVariantLocalize.T.log_wrote_back, pending.Name, pm.blueprintId), set);
+            Debug.Log(string.Format(AvatarVariantLocalize.Dictionary.log_wrote_back, pending.Name, pm.blueprintId), set);
         }
     }
 }

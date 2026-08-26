@@ -24,7 +24,7 @@ namespace MinMinMart.AvatarVariant.Editor
         // 入力欄の残り幅を、バリアント名とブループリントIDでどう分けるか。
         private const float NameFieldRatio = 0.34f;
 
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         // 「適用」を押した時点のバリアント名。切り替えボタンの表示にはこれを使う。
         // 入力のたびにボタンが増減すると IMGUI のコントロール ID が後ろへずれ、
@@ -50,15 +50,15 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUILayout.Space();
 
             serializedObject.Update();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("Set"), new GUIContent(T.set_asset));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("Set"), new GUIContent(LocalizeDict.set_asset));
             serializedObject.ApplyModifiedProperties();
 
             if (selector.Set == null)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(T.set_asset_help, MessageType.Info);
+                EditorGUILayout.HelpBox(LocalizeDict.set_asset_help, MessageType.Info);
 
-                if (GUILayout.Button(T.create_set_asset, GUILayout.Height(26)))
+                if (GUILayout.Button(LocalizeDict.create_set_asset, GUILayout.Height(26)))
                 {
                     AvatarVariantSetFactory.CreateForSelector(selector);
                 }
@@ -88,7 +88,7 @@ namespace MinMinMart.AvatarVariant.Editor
             bool apply = DrawApplyButton(set, setSo);
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(setSo.FindProperty("AllowUnmatchedBlueprintId"),
-                new GUIContent(T.allow_unmatched));
+                new GUIContent(LocalizeDict.allow_unmatched));
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみや「適用」自身の押下まで拾ってしまう。
@@ -116,7 +116,7 @@ namespace MinMinMart.AvatarVariant.Editor
         private static void DrawVariants(SerializedObject setSo, GameObject root, VRC.Core.PipelineManager pm)
         {
             SerializedProperty variants = setSo.FindProperty("Variants");
-            EditorGUILayout.LabelField(string.Format(T.variants_header, variants.arraySize), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
             for (int i = 0; i < variants.arraySize; i++)
             {
@@ -153,11 +153,11 @@ namespace MinMinMart.AvatarVariant.Editor
                     expanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
                     FoldoutState.SetExpanded(variant, expanded);
                     DrawCurrentMarker(markRect, isCurrent);
-                    DrawFieldWithPlaceholder(nameRect, nameProp, T.placeholder_name);
-                    DrawFieldWithPlaceholder(idRect, idProp, T.placeholder_id);
+                    DrawFieldWithPlaceholder(nameRect, nameProp, LocalizeDict.placeholder_name);
+                    DrawFieldWithPlaceholder(idRect, idProp, LocalizeDict.placeholder_id);
 
-                    bool duplicate = GUI.Button(dupRect, T.duplicate);
-                    bool delete = GUI.Button(delRect, T.delete);
+                    bool duplicate = GUI.Button(dupRect, LocalizeDict.duplicate);
+                    bool delete = GUI.Button(delRect, LocalizeDict.delete);
                     EditorGUI.indentLevel = indent;
 
                     if (duplicate)
@@ -169,11 +169,11 @@ namespace MinMinMart.AvatarVariant.Editor
                     if (delete)
                     {
                         string title = string.IsNullOrEmpty(nameProp.stringValue)
-                            ? string.Format(T.variant_unnamed, i)
+                            ? string.Format(LocalizeDict.variant_unnamed, i)
                             : nameProp.stringValue;
 
-                        if (EditorUtility.DisplayDialog(T.delete_dialog_title,
-                                string.Format(T.delete_dialog_message, title), T.delete, T.delete_dialog_cancel))
+                        if (EditorUtility.DisplayDialog(LocalizeDict.delete_dialog_title,
+                                string.Format(LocalizeDict.delete_dialog_message, title), LocalizeDict.delete, LocalizeDict.delete_dialog_cancel))
                         {
                             variants.DeleteArrayElementAtIndex(i);
                         }
@@ -184,7 +184,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     if (!expanded) continue;
 
                     EditorGUILayout.Space(2);
-                    EditorGUILayout.LabelField(T.operations_header, EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField(LocalizeDict.operations_header, EditorStyles.miniBoldLabel);
 
                     Transform rootT = root != null ? root.transform : null;
                     VariantOperationGui.DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), rootT);
@@ -193,7 +193,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
             }
 
-            if (GUILayout.Button(T.add_variant))
+            if (GUILayout.Button(LocalizeDict.add_variant))
             {
                 AddBlankVariant(variants);
             }
@@ -205,13 +205,13 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             if (root == null)
             {
-                EditorGUILayout.HelpBox(T.no_avatar_root, MessageType.Error);
+                EditorGUILayout.HelpBox(LocalizeDict.no_avatar_root, MessageType.Error);
                 return;
             }
 
             if (pm == null)
             {
-                EditorGUILayout.HelpBox(string.Format(T.no_pipeline_manager, root.name), MessageType.Error);
+                EditorGUILayout.HelpBox(string.Format(LocalizeDict.no_pipeline_manager, root.name), MessageType.Error);
                 return;
             }
 
@@ -228,14 +228,14 @@ namespace MinMinMart.AvatarVariant.Editor
                 : new Color(0.9f, 0.5f, 0.3f);
 
             string caption = current == null
-                ? T.build_target_none
-                : string.Format(viaPending ? T.build_target_new : T.build_target, current.Name);
+                ? LocalizeDict.build_target_none
+                : string.Format(viaPending ? LocalizeDict.build_target_new : LocalizeDict.build_target, current.Name);
 
             EditorGUILayout.LabelField(caption, style);
-            EditorGUILayout.LabelField(T.blueprint_id,
-                string.IsNullOrEmpty(pm.blueprintId) ? T.blueprint_id_unassigned : pm.blueprintId);
+            EditorGUILayout.LabelField(LocalizeDict.blueprint_id,
+                string.IsNullOrEmpty(pm.blueprintId) ? LocalizeDict.blueprint_id_unassigned : pm.blueprintId);
 
-            EditorGUILayout.HelpBox(T.scene_untouched_help, MessageType.None);
+            EditorGUILayout.HelpBox(LocalizeDict.scene_untouched_help, MessageType.None);
         }
 
         private static void DrawPendingBanner(AvatarVariantSet set)
@@ -243,9 +243,9 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantDefinition pending = set.PendingVariant;
             if (pending == null) return;
 
-            EditorGUILayout.HelpBox(string.Format(T.pending_banner, pending.Name), MessageType.Info);
+            EditorGUILayout.HelpBox(string.Format(LocalizeDict.pending_banner, pending.Name), MessageType.Info);
 
-            if (GUILayout.Button(T.cancel_pending, GUILayout.Width(110)))
+            if (GUILayout.Button(LocalizeDict.cancel_pending, GUILayout.Width(110)))
             {
                 AvatarVariantSwitcher.CancelPending(set);
             }
@@ -257,7 +257,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             if (pm == null) return;
 
-            EditorGUILayout.LabelField(T.switch_header, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(LocalizeDict.switch_header, EditorStyles.boldLabel);
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
@@ -279,7 +279,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         bool isPending = set.PendingVariant == variant;
                         using (new EditorGUI.DisabledScope(isPending))
                         {
-                            string label = string.Format(isPending ? T.pending_label : T.mark_new_upload, name);
+                            string label = string.Format(isPending ? LocalizeDict.pending_label : LocalizeDict.mark_new_upload, name);
                             if (GUILayout.Button(label, GUILayout.Height(26)))
                             {
                                 AvatarVariantSwitcher.MarkPending(set, pm, variant);
@@ -292,7 +292,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     bool isCurrent = variant.BlueprintId == pm.blueprintId;
                     using (new EditorGUI.DisabledScope(isCurrent))
                     {
-                        string label = string.Format(isCurrent ? T.switch_current : T.switch_to, name);
+                        string label = string.Format(isCurrent ? LocalizeDict.switch_current : LocalizeDict.switch_to, name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
                             AvatarVariantSwitcher.SwitchTo(pm, variant);
@@ -314,7 +314,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             using (new EditorGUI.DisabledScope(!HasPendingChanges(set, setSo)))
             {
-                return GUILayout.Button(T.apply_changes);
+                return GUILayout.Button(LocalizeDict.apply_changes);
             }
         }
 
@@ -370,7 +370,7 @@ namespace MinMinMart.AvatarVariant.Editor
             // 入力途中の空欄で警告を出すと、消すために入力を急かす表示になってしまう。
             if (_appliedNames.Any(string.IsNullOrWhiteSpace))
             {
-                messages.Add(T.warn_name_required);
+                messages.Add(LocalizeDict.warn_name_required);
             }
 
             messages.AddRange(AvatarVariantValidator.CollectProblems(set, root));
@@ -378,7 +378,7 @@ namespace MinMinMart.AvatarVariant.Editor
             bool hasProblem = messages.Count > 0;
             if (HasPendingChanges(set, setSo))
             {
-                messages.Add(T.unapplied_changes);
+                messages.Add(LocalizeDict.unapplied_changes);
             }
 
             if (messages.Count == 0)
@@ -455,7 +455,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             SerializedProperty copy = variants.GetArrayElementAtIndex(index + 1);
             SerializedProperty nameProp = copy.FindPropertyRelative("Name");
-            nameProp.stringValue = nameProp.stringValue + T.copy_suffix;
+            nameProp.stringValue = nameProp.stringValue + LocalizeDict.copy_suffix;
             copy.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
             copy.FindPropertyRelative("BlueprintId").stringValue = "";
         }

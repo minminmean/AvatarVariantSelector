@@ -19,7 +19,7 @@ namespace MinMinMart.AvatarVariant.Editor
         // アバター名が取れない、または使える文字が残らなかったときのファイル名。
         private const string FallbackFileName = "AvatarVariantSet";
 
-        private static AvatarVariantLocalizeDictionary T => AvatarVariantLocalize.T;
+        private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
         /// 設定アセットを作り、<paramref name="selector"/> に割り当てる。
@@ -40,7 +40,7 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorUtility.SetDirty(selector);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
 
-            Debug.Log(string.Format(T.log_created_asset, path), set);
+            Debug.Log(string.Format(LocalizeDict.log_created_asset, path), set);
         }
 
         /// <summary>
