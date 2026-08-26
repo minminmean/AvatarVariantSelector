@@ -60,6 +60,7 @@
 
     "log_switched": "[Avatar Variant] Upload target switched to '{0}' ({1}).",
     "log_marked_pending": "[Avatar Variant] '{0}' is queued for a new upload. The blueprint ID was cleared, so the next upload creates a new avatar.",
+    "log_adopted_blueprint_id": "[Avatar Variant] Copied the blueprint ID already in the PipelineManager ({0}) into the first variant.",
     "log_created_asset": "[Avatar Variant] Created profile: {0}",
     "log_wrote_back": "[Avatar Variant] Wrote the assigned blueprint ID back to variant '{0}' and saved it ({1}).",
 

@@ -272,7 +272,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (GUILayout.Button(LocalizeDict.add_variant))
             {
-                AddBlankVariant(variants);
+                AddBlankVariant(variants, pm);
                 AvatarVariantProfileSaver.Request();
                 _selectionNeedsFixing = true;
             }
@@ -496,19 +496,34 @@ namespace MinMinMart.AvatarVariant.Editor
         /// 空のバリアントを末尾に足す。
         /// arraySize を増やすだけだと Unity が直前の要素をコピーしてしまい、
         /// 追加した瞬間に Blueprint ID が重複するので、明示的に初期化する。
+        ///
+        /// 最初の 1 つだけは、PipelineManager に入っている Blueprint ID を引き継ぐ。
+        /// アップロード先が決まっているアバターに後から入れた場合、空のまま足すと
+        /// どのバリアントとも一致しない状態になり、ビルドが止まってしまうため。
+        /// 2 つ目以降は別のアップロード先を作る操作なので、引き継がない。
         /// </summary>
-        private static void AddBlankVariant(SerializedProperty variants)
+        private static void AddBlankVariant(SerializedProperty variants, VRC.Core.PipelineManager pm)
         {
             int index = variants.arraySize;
+            bool isFirst = index == 0;
             variants.arraySize++;
+
+            string blueprintId = isFirst && pm != null && !string.IsNullOrEmpty(pm.blueprintId)
+                ? pm.blueprintId
+                : "";
 
             SerializedProperty v = variants.GetArrayElementAtIndex(index);
             v.FindPropertyRelative("Name").stringValue = "";
             v.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
-            v.FindPropertyRelative("BlueprintId").stringValue = "";
+            v.FindPropertyRelative("BlueprintId").stringValue = blueprintId;
             v.FindPropertyRelative("RemoveObjectPaths").ClearArray();
             v.FindPropertyRelative("MaterialOverrides").ClearArray();
             v.FindPropertyRelative("BlendShapeChanges").ClearArray();
+
+            if (!string.IsNullOrEmpty(blueprintId))
+            {
+                Debug.Log(string.Format(LocalizeDict.log_adopted_blueprint_id, blueprintId));
+            }
         }
 
         /// <summary>

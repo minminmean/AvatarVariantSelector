@@ -60,6 +60,7 @@
 
     "log_switched": "[Avatar Variant] アップロード先を「{0}」({1}) に切り替えました。",
     "log_marked_pending": "[Avatar Variant] 「{0}」を新規アップロード対象にしました。Blueprint ID を空にしたので、次のアップロードで新しいアバターが作られます。",
+    "log_adopted_blueprint_id": "[Avatar Variant] PipelineManager に入っていた Blueprint ID ({0}) を、最初のバリアントに書き写しました。",
     "log_created_asset": "[Avatar Variant] プロファイルを作成しました: {0}",
     "log_wrote_back": "[Avatar Variant] 採番された Blueprint ID をバリアント「{0}」に書き写して保存しました（{1}）。",
 

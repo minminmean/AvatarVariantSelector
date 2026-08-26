@@ -75,6 +75,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public string log_switched;
         public string log_marked_pending;
+        public string log_adopted_blueprint_id;
         public string log_created_asset;
         public string log_wrote_back;
 
