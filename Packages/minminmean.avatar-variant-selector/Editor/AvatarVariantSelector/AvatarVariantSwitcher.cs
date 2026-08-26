@@ -62,6 +62,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void WriteBlueprintId(VRC.Core.PipelineManager pm, string value)
         {
+            // 同じ値なら触らない。書くとシーンに変更済みの印が付くので、
+            // 中身が変わらないのに保存を促されることになる。
+            if (pm.blueprintId == value) return;
+
             Undo.RecordObject(pm, "Set blueprint ID");
 
             SerializedObject so = new SerializedObject(pm);

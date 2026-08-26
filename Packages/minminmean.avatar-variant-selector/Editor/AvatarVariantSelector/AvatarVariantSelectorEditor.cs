@@ -26,6 +26,14 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
+        // 一覧を足し引きした直後に、選択を選び直す必要があるか。
+        // 描画の途中では SerializedObject に反映されていないので、印だけ付けて後で処理する。
+        private bool _selectionNeedsFixing;
+
+        // 選択中のバリアントを削除したか。
+        // このとき PipelineManager に残っている ID は、消えたバリアントのものになる。
+        private bool _deletedCurrentVariant;
+
 
 
         public override void OnInspectorGUI()
@@ -40,7 +48,9 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantLocalize.DrawLanguagePopup();
 
             serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(serializedObject.FindProperty("Profile"), new GUIContent(LocalizeDict.profile_asset));
+            if (EditorGUI.EndChangeCheck()) _selectionNeedsFixing = true;
             serializedObject.ApplyModifiedProperties();
 
             if (selector.Profile == null)
@@ -83,13 +93,46 @@ namespace MinMinMart.AvatarVariant.Editor
                 EditorUtility.SetDirty(profile);
             }
 
+            // 反映が済んでから選び直す。追加したバリアントは、ここまで来ないと
+            // profile.Variants に現れない。
+            if (_selectionNeedsFixing)
+            {
+                FixSelection(profile, pm);
+            }
+
             AvatarVariantProfileSaver.RequestOnFocusLost();
             AvatarVariantProfileSaver.SaveIfRequested(profile);
         }
 
+        /// <summary>
+        /// バリアントがあるのに未選択、という状態を残さない。
+        ///
+        /// 一覧を足し引きしたときとプロファイルを差し替えたときだけ呼ぶ。常時呼ぶと、
+        /// Blueprint ID を打ち替えている途中の一瞬だけ一致しなくなった隙に選び直してしまう。
+        /// </summary>
+        private void FixSelection(AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
+        {
+            bool staleId = _deletedCurrentVariant;
+            _selectionNeedsFixing = false;
+            _deletedCurrentVariant = false;
+
+            if (pm == null || profile == null) return;
+            if (profile.ResolveForBuild(pm.blueprintId, out bool _) != null) return;
+
+            // 消したバリアントの ID が残っているだけなら選び直してよい。
+            // そうでなく ID が入っている場合は、一覧に無い実在のアバターを指しているので触らない。
+            // 勝手に選び直すと、そのアバターではない先へ上書きアップロードしてしまう。
+            if (!staleId && !string.IsNullOrEmpty(pm.blueprintId)) return;
+
+            AvatarVariantDefinition first = profile.Variants.FirstOrDefault(v => v != null);
+            if (first == null) return;
+
+            AvatarVariantSwitcher.SwitchTo(profile, pm, first);
+        }
+
         // ---------- バリアント一覧 ----------
 
-        private static void DrawVariants(SerializedObject profileSo, GameObject root, VRC.Core.PipelineManager pm)
+        private void DrawVariants(SerializedObject profileSo, GameObject root, VRC.Core.PipelineManager pm)
         {
             SerializedProperty variants = profileSo.FindProperty("Variants");
             EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
@@ -161,6 +204,8 @@ namespace MinMinMart.AvatarVariant.Editor
                                 string.Format(LocalizeDict.delete_dialog_message, title), LocalizeDict.delete, LocalizeDict.delete_dialog_cancel))
                         {
                             variants.DeleteArrayElementAtIndex(i);
+                            _selectionNeedsFixing = true;
+                            _deletedCurrentVariant = isCurrent;
                         }
 
                         return;
@@ -181,6 +226,7 @@ namespace MinMinMart.AvatarVariant.Editor
             if (GUILayout.Button(LocalizeDict.add_variant))
             {
                 AddBlankVariant(variants);
+                _selectionNeedsFixing = true;
             }
         }
 
