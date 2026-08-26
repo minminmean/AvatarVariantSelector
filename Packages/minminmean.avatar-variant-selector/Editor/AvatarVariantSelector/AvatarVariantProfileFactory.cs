@@ -5,24 +5,24 @@ using UnityEngine;
 namespace MinMinMart.AvatarVariant.Editor
 {
     /// <summary>
-    /// 設定アセットを作る。
+    /// プロファイルアセットを作る。
     ///
     /// 置き場所は固定のフォルダにまとめ、ファイル名はアバター名にする。
     /// シーンの隣に置くとアバターを複数のシーンで扱ったときに散らばるので、
-    /// 「どのアバターの設定か」だけで探せる形にしている。
+    /// 「どのアバターのプロファイルか」だけで探せる形にしている。
     /// </summary>
-    internal static class AvatarVariantSetFactory
+    internal static class AvatarVariantProfileFactory
     {
-        // 設定アセットの置き場所。無ければ作る。
+        // プロファイルアセットの置き場所。無ければ作る。
         private const string ProfileFolder = "Assets/MinMinMart/AvatarVariantSelector/Profiles";
 
         // アバター名が取れない、または使える文字が残らなかったときのファイル名。
-        private const string FallbackFileName = "AvatarVariantSet";
+        private const string FallbackFileName = "AvatarVariantProfile";
 
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
-        /// 設定アセットを作り、<paramref name="selector"/> に割り当てる。
+        /// プロファイルアセットを作り、<paramref name="selector"/> に割り当てる。
         /// </summary>
         internal static void CreateForSelector(AvatarVariantSelector selector)
         {
@@ -31,16 +31,16 @@ namespace MinMinMart.AvatarVariant.Editor
             string fileName = SanitizeFileName(FindAvatarName(selector));
             string path = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{fileName}.asset");
 
-            AvatarVariantSet set = ScriptableObject.CreateInstance<AvatarVariantSet>();
-            AssetDatabase.CreateAsset(set, path);
-            AssetDatabase.SaveAssetIfDirty(set);
+            AvatarVariantProfile profile = ScriptableObject.CreateInstance<AvatarVariantProfile>();
+            AssetDatabase.CreateAsset(profile, path);
+            AssetDatabase.SaveAssetIfDirty(profile);
 
-            Undo.RecordObject(selector, "Assign variant set");
-            selector.Set = set;
+            Undo.RecordObject(selector, "Assign variant profile");
+            selector.Profile = profile;
             EditorUtility.SetDirty(selector);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
 
-            Debug.Log(string.Format(LocalizeDict.log_created_asset, path), set);
+            Debug.Log(string.Format(LocalizeDict.log_created_asset, path), profile);
         }
 
         /// <summary>

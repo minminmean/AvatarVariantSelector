@@ -41,28 +41,28 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void TryWriteBack(AvatarVariantSelector selector)
         {
-            if (selector == null || selector.Set == null) return;
+            if (selector == null || selector.Profile == null) return;
 
-            AvatarVariantSet set = selector.Set;
-            AvatarVariantDefinition pending = set.PendingVariant;
+            AvatarVariantProfile profile = selector.Profile;
+            AvatarVariantDefinition pending = profile.PendingVariant;
             if (pending == null) return;
 
             VRC.Core.PipelineManager pm = AvatarRootFinder.FindPipelineManager(selector.transform);
             if (pm == null || string.IsNullOrEmpty(pm.blueprintId)) return;
 
             // 他のバリアントが既に使っている ID なら、採番されたものではないので触らない。
-            if (set.Variants.Any(v => v != null && v != pending && v.BlueprintId == pm.blueprintId)) return;
+            if (profile.Variants.Any(v => v != null && v != pending && v.BlueprintId == pm.blueprintId)) return;
 
-            Undo.RecordObject(set, "Write back blueprint ID");
+            Undo.RecordObject(profile, "Write back blueprint ID");
             pending.BlueprintId = pm.blueprintId;
-            set.PendingVariantKey = "";
+            profile.PendingVariantKey = "";
 
             // このアセットだけを保存する。AssetDatabase.SaveAssets() は
             // 他の未保存アセットまで巻き添えで書き込んでしまうので使わない。
-            EditorUtility.SetDirty(set);
-            AssetDatabase.SaveAssetIfDirty(set);
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssetIfDirty(profile);
 
-            Debug.Log(string.Format(AvatarVariantLocalize.Dictionary.log_wrote_back, pending.Name, pm.blueprintId), set);
+            Debug.Log(string.Format(AvatarVariantLocalize.Dictionary.log_wrote_back, pending.Name, pm.blueprintId), profile);
         }
     }
 }

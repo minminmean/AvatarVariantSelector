@@ -6,7 +6,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// <summary>
     /// アバタールートからの相対パスを、オブジェクト参照欄のように編集させる GUI 部品。
     ///
-    /// 設定アセットからシーン内オブジェクトは参照できないので保持しているのはパスだが、
+    /// プロファイルからシーン内オブジェクトは参照できないので保持しているのはパスだが、
     /// その制約を操作感に持ち込まないための層。パスが切れている場合はその場で知らせる。
     /// </summary>
     internal static class ObjectPathField
@@ -19,7 +19,7 @@ namespace MinMinMart.AvatarVariant.Editor
         internal static void Draw(SerializedProperty pathProp, Transform root)
         {
             string path = pathProp.stringValue;
-            Transform found = root != null ? AvatarVariantSet.FindByPath(root, path) : null;
+            Transform found = root != null ? AvatarVariantProfile.FindByPath(root, path) : null;
             bool broken = found == null && !string.IsNullOrEmpty(path);
 
             EditorGUI.BeginChangeCheck();
@@ -31,11 +31,11 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (picked == null)
                 {
                     pathProp.stringValue = "";
-                    AvatarVariantSetSaver.Request();
+                    AvatarVariantProfileSaver.Request();
                 }
                 else
                 {
-                    string newPath = AvatarVariantSet.GetPath(root, picked.transform);
+                    string newPath = AvatarVariantProfile.GetPath(root, picked.transform);
                     if (string.IsNullOrEmpty(newPath))
                     {
                         Debug.LogWarning(string.Format(LocalizeDict.outside_avatar_pick, picked.name));
@@ -43,7 +43,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     else
                     {
                         pathProp.stringValue = newPath;
-                        AvatarVariantSetSaver.Request();
+                        AvatarVariantProfileSaver.Request();
                     }
                 }
             }
@@ -76,7 +76,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 GameObject go = obj as GameObject;
                 if (go == null) continue;
 
-                string path = AvatarVariantSet.GetPath(root, go.transform);
+                string path = AvatarVariantProfile.GetPath(root, go.transform);
                 if (string.IsNullOrEmpty(path))
                 {
                     Debug.LogWarning(string.Format(LocalizeDict.outside_avatar_drop, go.name));
@@ -85,7 +85,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 paths.arraySize++;
                 paths.GetArrayElementAtIndex(paths.arraySize - 1).stringValue = path;
-                AvatarVariantSetSaver.Request();
+                AvatarVariantProfileSaver.Request();
             }
 
             e.Use();

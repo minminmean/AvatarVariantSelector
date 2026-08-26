@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MinMinMart.AvatarVariant
 {
@@ -9,7 +10,7 @@ namespace MinMinMart.AvatarVariant
     /// 引き算して作る。そのためバリアントを切り替えてもシーンは汚れない。
     /// アバタールートに付けて使う。
     ///
-    /// 設定の実体は <see cref="AvatarVariantSet"/> アセット側にある。ここが持つのは
+    /// 設定の実体は <see cref="AvatarVariantProfile"/> アセット側にある。ここが持つのは
     /// その参照だけなので、アップロードで採番された Blueprint ID の保存に
     /// シーンの保存を必要としない。
     /// </summary>
@@ -17,7 +18,7 @@ namespace MinMinMart.AvatarVariant
     [DisallowMultipleComponent]
     public class AvatarVariantSelector : MonoBehaviour, VRC.SDKBase.IEditorOnly
     {
-        // バリアント設定アセット。設定はここに保存されるので、シーンを保存しなくても失われない。
-        public AvatarVariantSet Set;
+        // バリアントプロファイル。設定はここに保存されるので、シーンを保存しなくても失われない。
+        [FormerlySerializedAs("Set")] public AvatarVariantProfile Profile;
     }
 }

@@ -1,8 +1,8 @@
 {
     "language": "言語",
-    "set_asset": "設定アセット",
-    "set_asset_help": "バリアント設定はアセットに保存します。アップロードで採番された Blueprint ID をスクリプトから保存できるようにするためで、シーンを保存し忘れても設定を失いません。",
-    "create_set_asset": "設定アセットを作成",
+    "profile_asset": "プロファイル",
+    "profile_asset_help": "バリアント設定はプロファイルアセットに保存します。アップロードで採番された Blueprint ID をスクリプトから保存できるようにするためで、シーンを保存し忘れても設定を失いません。",
+    "create_profile_asset": "プロファイルを作成",
     "no_avatar_root": "アバターのルート (VRCAvatarDescriptor) が見つかりません。このコンポーネントはアバター配下に置いてください。",
     "no_pipeline_manager": "'{0}' に PipelineManager がありません。",
 
@@ -61,19 +61,19 @@
 
     "log_switched": "[Avatar Variant] アップロード先を「{0}」({1}) に切り替えました。",
     "log_marked_pending": "[Avatar Variant] 「{0}」を新規アップロード対象にしました。Blueprint ID を空にしたので、次のアップロードで新しいアバターが作られます。",
-    "log_created_asset": "[Avatar Variant] 設定アセットを作成しました: {0}",
+    "log_created_asset": "[Avatar Variant] プロファイルを作成しました: {0}",
     "log_wrote_back": "[Avatar Variant] 採番された Blueprint ID をバリアント「{0}」に書き写して保存しました（{1}）。",
 
     "asset_edit_hint": "編集はアバターの Avatar Variant Selector から行ってください。\n対象はアバタールートからの相対パスで保持しているため、アバターを基準にしないと参照先の確認や選択ができません。",
-    "asset_select_user": "このアセットを使っているアバターを選択",
+    "asset_select_user": "このプロファイルを使っているアバターを選択",
     "asset_unnamed": "(名前なし)",
     "asset_operations": "操作",
     "asset_operations_value": "削除 {0} / マテリアル {1} / シェイプ {2}",
     "asset_pending": "「{0}」が新規アップロード待ちです。",
-    "asset_user_not_found": "[Avatar Variant] このアセットを参照しているアバターが、開いているシーンに見つかりません。",
+    "asset_user_not_found": "[Avatar Variant] このプロファイルを参照しているアバターが、開いているシーンに見つかりません。",
 
     "build_multiple_selectors": "[Avatar Variant] '{0}' に AvatarVariantSelector が {1} 個あります。1 個だけにしてください。",
-    "build_no_set": "[Avatar Variant] '{0}' の AvatarVariantSelector に設定アセットが割り当てられていません。",
+    "build_no_profile": "[Avatar Variant] '{0}' の AvatarVariantSelector にプロファイルが割り当てられていません。",
     "build_cannot_resolve": "[Avatar Variant] ビルドするバリアントを決められないため、誤った内容をアップロードしないようビルドを中断しました。\n  現在の ID: {0}\n  登録済みのバリアント:\n{1}\n{2}",
     "build_hint_switch": "  Avatar Variant Selector でバリアントを選び直してください。",
     "build_no_selection": "[Avatar Variant] バリアントが選択されていないため、PipelineManager の指定どおりにアップロードします。",

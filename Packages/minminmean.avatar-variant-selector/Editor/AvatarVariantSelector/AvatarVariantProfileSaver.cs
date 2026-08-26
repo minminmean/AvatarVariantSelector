@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 namespace MinMinMart.AvatarVariant.Editor
 {
     /// <summary>
-    /// コンポーネントで編集した内容を設定アセットへ書き出す。
+    /// コンポーネントで編集した内容をプロファイルアセットへ書き出す。
     ///
     /// 操作のたびに書き出すと再インポートが走って重いので、編集中は変更済みの印だけを付け、
     /// 書き出しはここに集めたきっかけでだけ行う。UI に「適用」ボタンは出さず、
@@ -16,7 +16,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// 入力欄からフォーカスが外れたとき、ビルド、シーンの保存。
     /// </summary>
     [InitializeOnLoad]
-    internal static class AvatarVariantSetSaver
+    internal static class AvatarVariantProfileSaver
     {
         // 描画の途中で書き出すと、そのフレームの入力を取りこぼす。
         // 要求だけ受けておき、SerializedObject を反映し終えてから書き出す。
@@ -28,7 +28,7 @@ namespace MinMinMart.AvatarVariant.Editor
         // 直前にフォーカスが当たっていたコントロール。
         private static string _focusedField = "";
 
-        static AvatarVariantSetSaver()
+        static AvatarVariantProfileSaver()
         {
             EditorSceneManager.sceneSaved += SaveAllInScene;
         }
@@ -70,26 +70,26 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// 覚えがあれば書き出す。SerializedObject を反映し終えてから呼ぶこと。
         /// </summary>
-        internal static void SaveIfRequested(AvatarVariantSet set)
+        internal static void SaveIfRequested(AvatarVariantProfile profile)
         {
             if (!_requested) return;
 
             _requested = false;
-            Save(set);
+            Save(profile);
         }
 
         /// <summary>
         /// その場で書き出す。変更が無ければ何も起きない。
         /// </summary>
-        internal static void Save(AvatarVariantSet set)
+        internal static void Save(AvatarVariantProfile profile)
         {
-            if (set == null) return;
+            if (profile == null) return;
 
-            AssetDatabase.SaveAssetIfDirty(set);
+            AssetDatabase.SaveAssetIfDirty(profile);
         }
 
         /// <summary>
-        /// 保存されたシーンに置かれているコンポーネントの設定アセットをすべて書き出す。
+        /// 保存されたシーンに置かれているコンポーネントのプロファイルアセットをすべて書き出す。
         /// </summary>
         private static void SaveAllInScene(Scene scene)
         {
@@ -97,7 +97,7 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (selector.gameObject.scene != scene) continue;
 
-                Save(selector.Set);
+                Save(selector.Profile);
             }
         }
     }

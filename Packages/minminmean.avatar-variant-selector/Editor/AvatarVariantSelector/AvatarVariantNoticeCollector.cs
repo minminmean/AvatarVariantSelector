@@ -21,25 +21,25 @@ namespace MinMinMart.AvatarVariant.Editor
         ///
         /// <paramref name="root"/> が null のときは、基準が無いのでパスの生存確認を飛ばす。
         /// </summary>
-        internal static List<string> CollectProblems(AvatarVariantSet set, GameObject root, string blueprintId)
+        internal static List<string> CollectProblems(AvatarVariantProfile profile, GameObject root, string blueprintId)
         {
             List<string> problems = new List<string>();
 
             // アップロード先が決まっていないと、ビルドしても PipelineManager の指定のまま上がる。
             // 止めはしないが、意図しないアップロードになりやすいので先に知らせる。
-            if (set.Variants.All(v => v == null))
+            if (profile.Variants.All(v => v == null))
             {
                 problems.Add(LocalizeDict.warn_no_variants);
             }
-            else if (set.ResolveForBuild(blueprintId, out bool _) == null)
+            else if (profile.ResolveForBuild(blueprintId, out bool _) == null)
             {
                 problems.Add(LocalizeDict.warn_no_selection);
             }
 
-            List<string> ids = set.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
+            List<string> ids = profile.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
             Transform rootT = root != null ? root.transform : null;
 
-            foreach (AvatarVariantDefinition v in set.Variants.Where(v => v != null))
+            foreach (AvatarVariantDefinition v in profile.Variants.Where(v => v != null))
             {
                 string duplicateId = CheckDuplicateId(v, ids);
                 if (duplicateId != null) problems.Add(duplicateId);
@@ -58,11 +58,11 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// 今の状態を伝えるだけのお知らせを集める。問題ではないので警告とは分けて返す。
         /// </summary>
-        internal static List<string> CollectInfos(AvatarVariantSet set)
+        internal static List<string> CollectInfos(AvatarVariantProfile profile)
         {
             List<string> infos = new List<string>();
 
-            AvatarVariantDefinition pending = set.PendingVariant;
+            AvatarVariantDefinition pending = profile.PendingVariant;
             if (pending != null)
             {
                 infos.Add(string.Format(LocalizeDict.pending_banner, pending.Name));
@@ -93,7 +93,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (string path in variant.RemoveObjectPaths.Where(p => !string.IsNullOrEmpty(p)))
             {
-                if (AvatarVariantSet.FindByPath(root, path) != null) continue;
+                if (AvatarVariantProfile.FindByPath(root, path) != null) continue;
 
                 problems.Add(string.Format(LocalizeDict.warn_remove_missing, variant.Name, path));
             }
@@ -110,7 +110,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (VariantMaterialOverride mo in variant.MaterialOverrides.Where(mo => mo != null && !string.IsNullOrEmpty(mo.RendererPath)))
             {
-                Transform t = AvatarVariantSet.FindByPath(root, mo.RendererPath);
+                Transform t = AvatarVariantProfile.FindByPath(root, mo.RendererPath);
                 Renderer r = t != null ? t.GetComponent<Renderer>() : null;
 
                 if (r == null)
@@ -136,7 +136,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (VariantBlendShapeChange bs in variant.BlendShapeChanges.Where(bs => bs != null && !string.IsNullOrEmpty(bs.RendererPath)))
             {
-                Transform t = AvatarVariantSet.FindByPath(root, bs.RendererPath);
+                Transform t = AvatarVariantProfile.FindByPath(root, bs.RendererPath);
                 SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
 
                 if (smr == null || smr.sharedMesh == null)

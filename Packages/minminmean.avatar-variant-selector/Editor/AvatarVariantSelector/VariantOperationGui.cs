@@ -34,7 +34,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         if (GUILayout.Button("−", GUILayout.Width(22)))
                         {
                             paths.DeleteArrayElementAtIndex(i);
-                            AvatarVariantSetSaver.Request();
+                            AvatarVariantProfileSaver.Request();
                             return;
                         }
                     }
@@ -67,26 +67,26 @@ namespace MinMinMart.AvatarVariant.Editor
                             if (GUILayout.Button("−", GUILayout.Width(22)))
                             {
                                 list.DeleteArrayElementAtIndex(i);
-                                AvatarVariantSetSaver.Request();
+                                AvatarVariantProfileSaver.Request();
                                 return;
                             }
                         }
 
                         SerializedProperty slotProp = e.FindPropertyRelative("Slot");
-                        AvatarVariantSetSaver.NameWatchedField(slotProp.propertyPath);
+                        AvatarVariantProfileSaver.NameWatchedField(slotProp.propertyPath);
                         EditorGUILayout.PropertyField(slotProp, new GUIContent(LocalizeDict.field_slot));
 
                         // 差し替え先の指定は 1 回きりの操作なので、その場で確定させる。
                         EditorGUI.BeginChangeCheck();
                         EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(LocalizeDict.field_material));
-                        if (EditorGUI.EndChangeCheck()) AvatarVariantSetSaver.Request();
+                        if (EditorGUI.EndChangeCheck()) AvatarVariantProfileSaver.Request();
                     }
                 }
 
                 if (GUILayout.Button(LocalizeDict.add_entry))
                 {
                     list.arraySize++;
-                    AvatarVariantSetSaver.Request();
+                    AvatarVariantProfileSaver.Request();
                 }
             }
         }
@@ -115,14 +115,14 @@ namespace MinMinMart.AvatarVariant.Editor
                             if (GUILayout.Button("−", GUILayout.Width(22)))
                             {
                                 list.DeleteArrayElementAtIndex(i);
-                                AvatarVariantSetSaver.Request();
+                                AvatarVariantProfileSaver.Request();
                                 return;
                             }
                         }
 
                         DrawShapePopup(e.FindPropertyRelative("ShapeName"), pathProp, root);
                         SerializedProperty valueProp = e.FindPropertyRelative("Value");
-                        AvatarVariantSetSaver.NameWatchedField(valueProp.propertyPath);
+                        AvatarVariantProfileSaver.NameWatchedField(valueProp.propertyPath);
                         EditorGUILayout.Slider(valueProp, 0f, 100f, new GUIContent(LocalizeDict.field_value));
                     }
                 }
@@ -130,7 +130,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (GUILayout.Button(LocalizeDict.add_entry))
                 {
                     list.arraySize++;
-                    AvatarVariantSetSaver.Request();
+                    AvatarVariantProfileSaver.Request();
                 }
             }
         }
@@ -140,7 +140,7 @@ namespace MinMinMart.AvatarVariant.Editor
         /// </summary>
         private static void DrawShapePopup(SerializedProperty nameProp, SerializedProperty pathProp, Transform root)
         {
-            Transform t = root != null ? AvatarVariantSet.FindByPath(root, pathProp.stringValue) : null;
+            Transform t = root != null ? AvatarVariantProfile.FindByPath(root, pathProp.stringValue) : null;
             SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
             Mesh mesh = smr != null ? smr.sharedMesh : null;
 
@@ -171,7 +171,7 @@ namespace MinMinMart.AvatarVariant.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 nameProp.stringValue = picked == 0 ? "" : names[picked];
-                AvatarVariantSetSaver.Request();
+                AvatarVariantProfileSaver.Request();
             }
         }
     }

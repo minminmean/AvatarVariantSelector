@@ -51,24 +51,24 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             AvatarVariantSelector selector = selectors[0];
-            AvatarVariantSet set = selector.Set;
+            AvatarVariantProfile profile = selector.Profile;
 
-            if (set == null)
+            if (profile == null)
             {
-                throw new System.Exception(string.Format(LocalizeDict.build_no_set, root.name));
+                throw new System.Exception(string.Format(LocalizeDict.build_no_profile, root.name));
             }
 
             // 編集中はディスクに書かず変更済みの印だけ付けているので、ここで書き出す。
-            AvatarVariantSetSaver.Save(set);
+            AvatarVariantProfileSaver.Save(profile);
 
             string blueprintId = GetBlueprintId(root);
-            AvatarVariantDefinition variant = set.ResolveForBuild(blueprintId, out bool viaPending);
+            AvatarVariantDefinition variant = profile.ResolveForBuild(blueprintId, out bool viaPending);
 
             // Blueprint ID が入っているのに一致するバリアントが無いときは止める。
             // どれを上書きするか決まらないまま既存アバターへ上げてしまうため、推測で進めない。
             if (variant == null && !string.IsNullOrEmpty(blueprintId))
             {
-                IEnumerable<string> known = set.Variants
+                IEnumerable<string> known = profile.Variants
                     .Where(v => v != null)
                     .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
 
@@ -111,7 +111,7 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (string.IsNullOrEmpty(path)) continue;
 
-                Transform target = AvatarVariantSet.FindByPath(root.transform, path);
+                Transform target = AvatarVariantProfile.FindByPath(root.transform, path);
                 if (target != null)
                 {
                     Object.DestroyImmediate(target.gameObject);
@@ -175,7 +175,7 @@ namespace MinMinMart.AvatarVariant.Editor
         private static Renderer ResolveRenderer(GameObject root, string path, string variantName,
             List<string> removedPaths)
         {
-            Transform t = AvatarVariantSet.FindByPath(root.transform, path);
+            Transform t = AvatarVariantProfile.FindByPath(root.transform, path);
             if (t == null)
             {
                 if (removedPaths.Any(p => path == p || path.StartsWith(p + "/"))) return null;

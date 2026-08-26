@@ -7,7 +7,7 @@ namespace MinMinMart.AvatarVariant.Editor
     /// アップロード先を切り替える。
     ///
     /// どのバリアントをビルドするかは PipelineManager の Blueprint ID で決まるので、
-    /// 切り替えとは ID を書き換えることそのものになる。シーンと設定アセットの両方に
+    /// 切り替えとは ID を書き換えることそのものになる。シーンとプロファイルの両方に
     /// 書き込みが発生するため、描画側から分けてここにまとめている。
     /// </summary>
     internal static class AvatarVariantSwitcher
@@ -21,12 +21,12 @@ namespace MinMinMart.AvatarVariant.Editor
         /// 入っていればその ID を PipelineManager に書き、そのアバターへ上書きアップロードになる。
         /// 空欄なら PipelineManager の ID も空にして、新規アバターとしてアップロードさせる。
         /// </summary>
-        internal static void SwitchTo(AvatarVariantSet set, VRC.Core.PipelineManager pm,
+        internal static void SwitchTo(AvatarVariantProfile profile, VRC.Core.PipelineManager pm,
             AvatarVariantDefinition variant)
         {
             bool isNew = string.IsNullOrEmpty(variant.BlueprintId);
 
-            Undo.RecordObject(set, "Switch variant");
+            Undo.RecordObject(profile, "Switch variant");
 
             if (isNew)
             {
@@ -37,16 +37,16 @@ namespace MinMinMart.AvatarVariant.Editor
                     variant.Key = System.Guid.NewGuid().ToString("N");
                 }
 
-                set.PendingVariantKey = variant.Key;
+                profile.PendingVariantKey = variant.Key;
             }
             else
             {
                 // ID で決まるので控えは要らない。残すとバナーが古い選択を指したままになる。
-                set.PendingVariantKey = "";
+                profile.PendingVariantKey = "";
             }
 
-            EditorUtility.SetDirty(set);
-            AssetDatabase.SaveAssetIfDirty(set);
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssetIfDirty(profile);
 
             WriteBlueprintId(pm, variant.BlueprintId);
 

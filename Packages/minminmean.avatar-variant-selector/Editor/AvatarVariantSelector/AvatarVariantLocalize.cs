@@ -15,9 +15,9 @@ namespace MinMinMart.AvatarVariant.Editor
     public struct AvatarVariantLocalizeDictionary
     {
         public string language;
-        public string set_asset;
-        public string set_asset_help;
-        public string create_set_asset;
+        public string profile_asset;
+        public string profile_asset_help;
+        public string create_profile_asset;
         public string no_avatar_root;
         public string no_pipeline_manager;
 
@@ -88,7 +88,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public string asset_user_not_found;
 
         public string build_multiple_selectors;
-        public string build_no_set;
+        public string build_no_profile;
         public string build_cannot_resolve;
         public string build_hint_switch;
         public string build_via_pending;

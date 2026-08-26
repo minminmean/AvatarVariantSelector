@@ -40,62 +40,62 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantLocalize.DrawLanguagePopup();
 
             serializedObject.Update();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("Set"), new GUIContent(LocalizeDict.set_asset));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("Profile"), new GUIContent(LocalizeDict.profile_asset));
             serializedObject.ApplyModifiedProperties();
 
-            if (selector.Set == null)
+            if (selector.Profile == null)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(LocalizeDict.set_asset_help, MessageType.Info);
+                EditorGUILayout.HelpBox(LocalizeDict.profile_asset_help, MessageType.Info);
 
-                if (GUILayout.Button(LocalizeDict.create_set_asset, GUILayout.Height(26)))
+                if (GUILayout.Button(LocalizeDict.create_profile_asset, GUILayout.Height(26)))
                 {
-                    AvatarVariantSetFactory.CreateForSelector(selector);
+                    AvatarVariantProfileFactory.CreateForSelector(selector);
                 }
 
                 return;
             }
 
-            AvatarVariantSet set = selector.Set;
-            SerializedObject setSo = new SerializedObject(set);
-            setSo.Update();
+            AvatarVariantProfile profile = selector.Profile;
+            SerializedObject profileSo = new SerializedObject(profile);
+            profileSo.Update();
             EditorGUILayout.Space();
 
-            DrawStatus(set, root, pm);
+            DrawStatus(profile, root, pm);
             EditorGUILayout.Space();
 
-            DrawVariants(setSo, root, pm);
+            DrawVariants(profileSo, root, pm);
             EditorGUILayout.Space();
 
             // 切り替えボタンと警告は入力欄より後ろに置く。IMGUI はコントロールの並び順で
             // フォーカスを覚えているので、入力欄より手前に出入りするものがあると、
             // 打っている最中にフォーカスが隣のコントロールへ移ってしまう。
-            DrawSwitcher(set, pm);
+            DrawSwitcher(profile, pm);
             EditorGUILayout.Space();
-            DrawNotices(set, root, pm != null ? pm.blueprintId : null);
+            DrawNotices(profile, root, pm != null ? pm.blueprintId : null);
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。
-            if (setSo.ApplyModifiedProperties())
+            if (profileSo.ApplyModifiedProperties())
             {
                 // ここではディスクに書かない。1 文字ごとに書き出すと再インポートが走って重い。
-                // 変更済みの印だけ付けておき、書き出しは AvatarVariantSetSaver のきっかけに任せる。
-                EditorUtility.SetDirty(set);
+                // 変更済みの印だけ付けておき、書き出しは AvatarVariantProfileSaver のきっかけに任せる。
+                EditorUtility.SetDirty(profile);
             }
 
-            AvatarVariantSetSaver.RequestOnFocusLost();
-            AvatarVariantSetSaver.SaveIfRequested(set);
+            AvatarVariantProfileSaver.RequestOnFocusLost();
+            AvatarVariantProfileSaver.SaveIfRequested(profile);
         }
 
         // ---------- バリアント一覧 ----------
 
-        private static void DrawVariants(SerializedObject setSo, GameObject root, VRC.Core.PipelineManager pm)
+        private static void DrawVariants(SerializedObject profileSo, GameObject root, VRC.Core.PipelineManager pm)
         {
-            SerializedProperty variants = setSo.FindProperty("Variants");
+            SerializedProperty variants = profileSo.FindProperty("Variants");
             EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
-            AvatarVariantSet set = (AvatarVariantSet)setSo.targetObject;
-            AvatarVariantDefinition pending = set.PendingVariant;
+            AvatarVariantProfile profile = (AvatarVariantProfile)profileSo.targetObject;
+            AvatarVariantDefinition pending = profile.PendingVariant;
 
             for (int i = 0; i < variants.arraySize; i++)
             {
@@ -105,7 +105,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 // 選択中の印は切り替えボタンと同じ基準で付ける。Blueprint ID がまだ無い
                 // バリアントは ID で判別できないので、新規アップロード待ちの指定を見る。
-                AvatarVariantDefinition definition = i < set.Variants.Count ? set.Variants[i] : null;
+                AvatarVariantDefinition definition = i < profile.Variants.Count ? profile.Variants[i] : null;
                 bool isCurrent = string.IsNullOrEmpty(idProp.stringValue)
                     ? definition != null && definition == pending
                     : pm != null && idProp.stringValue == pm.blueprintId;
@@ -136,9 +136,9 @@ namespace MinMinMart.AvatarVariant.Editor
                     expanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
                     FoldoutState.SetExpanded(variant, expanded);
                     DrawCurrentMarker(markRect, isCurrent);
-                    AvatarVariantSetSaver.NameWatchedField(nameProp.propertyPath);
+                    AvatarVariantProfileSaver.NameWatchedField(nameProp.propertyPath);
                     DrawFieldWithPlaceholder(nameRect, nameProp, LocalizeDict.placeholder_name);
-                    AvatarVariantSetSaver.NameWatchedField(idProp.propertyPath);
+                    AvatarVariantProfileSaver.NameWatchedField(idProp.propertyPath);
                     DrawFieldWithPlaceholder(idRect, idProp, LocalizeDict.placeholder_id);
 
                     bool duplicate = GUI.Button(dupRect, LocalizeDict.duplicate);
@@ -186,7 +186,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         // ---------- ヘッダー ----------
 
-        private static void DrawStatus(AvatarVariantSet set, GameObject root, VRC.Core.PipelineManager pm)
+        private static void DrawStatus(AvatarVariantProfile profile, GameObject root, VRC.Core.PipelineManager pm)
         {
             if (root == null)
             {
@@ -200,7 +200,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            AvatarVariantDefinition current = set.ResolveForBuild(pm.blueprintId, out bool _);
+            AvatarVariantDefinition current = profile.ResolveForBuild(pm.blueprintId, out bool _);
             // 枠と中身を分けて描く。1 つのラベルに改行を入れると行間を詰められないので、
             // 枠だけ先に用意して、その中に 1 行ずつ置く。
             GUIStyle boxStyle = new GUIStyle(EditorStyles.helpBox)
@@ -249,13 +249,13 @@ namespace MinMinMart.AvatarVariant.Editor
             }
         }
 
-        private void DrawSwitcher(AvatarVariantSet set, VRC.Core.PipelineManager pm)
+        private void DrawSwitcher(AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
         {
             if (pm == null) return;
 
             EditorGUILayout.LabelField(LocalizeDict.switch_header, EditorStyles.boldLabel);
 
-            if (set.Variants.All(v => v == null))
+            if (profile.Variants.All(v => v == null))
             {
                 EditorGUILayout.HelpBox(LocalizeDict.switch_no_variants, MessageType.Info);
                 return;
@@ -263,9 +263,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
-                for (int i = 0; i < set.Variants.Count; i++)
+                for (int i = 0; i < profile.Variants.Count; i++)
                 {
-                    AvatarVariantDefinition variant = set.Variants[i];
+                    AvatarVariantDefinition variant = profile.Variants[i];
                     if (variant == null) continue;
 
                     string name = variant.Name;
@@ -278,7 +278,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     // 文言だけを変えて、どちらになるか分かるようにする。
                     bool isNew = string.IsNullOrEmpty(variant.BlueprintId);
                     bool isCurrent = isNew
-                        ? set.PendingVariant == variant
+                        ? profile.PendingVariant == variant
                         : variant.BlueprintId == pm.blueprintId;
 
                     using (new EditorGUI.DisabledScope(isCurrent))
@@ -286,7 +286,7 @@ namespace MinMinMart.AvatarVariant.Editor
                         string label = string.Format(SelectLabel(isNew, isCurrent), name);
                         if (GUILayout.Button(label, GUILayout.Height(26)))
                         {
-                            AvatarVariantSwitcher.SwitchTo(set, pm, variant);
+                            AvatarVariantSwitcher.SwitchTo(profile, pm, variant);
                         }
                     }
                 }
@@ -322,10 +322,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// WarnとInfoを書き出す。
         /// どちらも内容はAvatarVariantNoticeCollectorに責務がある。
         /// </summary>
-        private void DrawNotices(AvatarVariantSet set, GameObject root, string blueprintId)
+        private void DrawNotices(AvatarVariantProfile profile, GameObject root, string blueprintId)
         {
-            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectProblems(set, root, blueprintId), MessageType.Warning);
-            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectInfos(set), MessageType.Info);
+            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectProblems(profile, root, blueprintId), MessageType.Warning);
+            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
         }
 
         // ---------- 補助 ----------

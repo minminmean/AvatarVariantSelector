@@ -67,8 +67,8 @@ namespace MinMinMart.AvatarVariant
     /// その代わりアセットからシーン内オブジェクトは参照できないので、対象は
     /// アバタールートからの相対パスで持つ。
     /// </summary>
-    [CreateAssetMenu(fileName = "AvatarVariantSet", menuName = "MinMinMart/Avatar Variant Set")]
-    public class AvatarVariantSet : ScriptableObject
+    [CreateAssetMenu(fileName = "AvatarVariantProfile", menuName = "MinMinMart/Avatar Variant Profile")]
+    public class AvatarVariantProfile : ScriptableObject
     {
         // アップロード先の一覧。いくつでも追加できる。
         public List<AvatarVariantDefinition> Variants = new List<AvatarVariantDefinition>();
