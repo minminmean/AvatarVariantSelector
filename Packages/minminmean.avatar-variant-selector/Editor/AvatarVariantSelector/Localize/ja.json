@@ -79,6 +79,7 @@
     "build_via_pending": "[Avatar Variant] Blueprint ID が存在しないため、新規アップロード待ちのバリアント「{0}」としてビルドします。",
     "build_remove_missing": "[Avatar Variant] バリアント「{0}」の削除対象 '{1}' が見つかりません。パスが切れている可能性があります。",
     "build_target_missing": "[Avatar Variant] バリアント「{0}」の対象 '{1}' が見つかりません。パスが切れている可能性があります。",
+    "build_no_skinned_renderer": "[Avatar Variant] バリアント「{0}」の対象 '{1}' は SkinnedMeshRenderer ではないため、ブレンドシェイプを設定できません。",
     "build_no_renderer": "[Avatar Variant] バリアント「{0}」の対象 '{1}' に Renderer がありません。",
     "build_slot_out_of_range": "[Avatar Variant] バリアント「{0}」: '{1}' のマテリアルスロット {2} は範囲外です（{3} 枠）。",
     "build_shape_missing": "[Avatar Variant] バリアント「{0}」: '{1}' にブレンドシェイプ '{2}' がありません。",

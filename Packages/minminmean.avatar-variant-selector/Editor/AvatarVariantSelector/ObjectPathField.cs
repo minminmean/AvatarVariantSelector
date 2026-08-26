@@ -52,7 +52,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
             GUIStyle style = new GUIStyle(EditorStyles.miniLabel);
             style.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
-            EditorGUILayout.LabelField(string.Format(LocalizeDict.path_broken, path), style);
+            // GUI.Label はコントロール ID を消費しない。この行は broken の真偽で出入りするので、
+            // ID を消費すると後ろに続く入力欄の ID がズレてフォーカスが外れる。
+            GUILayout.Label(string.Format(LocalizeDict.path_broken, path), style);
         }
 
         /// <summary>

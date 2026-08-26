@@ -95,6 +95,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public string build_remove_missing;
         public string build_target_missing;
         public string build_no_renderer;
+        public string build_no_skinned_renderer;
         public string build_slot_out_of_range;
         public string build_shape_missing;
         public string build_done;

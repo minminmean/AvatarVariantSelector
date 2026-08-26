@@ -79,6 +79,7 @@
     "build_via_pending": "[Avatar Variant] There is no blueprint ID, so building as the queued new-upload variant '{0}'.",
     "build_remove_missing": "[Avatar Variant] '{0}': removal target '{1}' was not found. The path may be broken.",
     "build_target_missing": "[Avatar Variant] '{0}': target '{1}' was not found. The path may be broken.",
+    "build_no_skinned_renderer": "[Avatar Variant] '{0}': target '{1}' is not a SkinnedMeshRenderer, so blend shapes cannot be set.",
     "build_no_renderer": "[Avatar Variant] '{0}': target '{1}' has no Renderer.",
     "build_slot_out_of_range": "[Avatar Variant] '{0}': material slot {2} on '{1}' is out of range ({3} slots).",
     "build_shape_missing": "[Avatar Variant] '{0}': '{1}' has no blend shape named '{2}'.",

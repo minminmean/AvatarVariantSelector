@@ -120,10 +120,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 }
 
                 // 先に親ごと消していれば見つからないのが正しい。それ以外は設定ミスなので止める。
-                if (removedPaths.Any(p => path.StartsWith(p + "/")))
-                {
-                    continue;
-                }
+                if (IsAlreadyRemoved(path, removedPaths)) continue;
 
                 throw new System.Exception(string.Format(LocalizeDict.build_remove_missing, variant.Name, path));
             }
@@ -150,8 +147,17 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (bs == null || string.IsNullOrEmpty(bs.RendererPath) || string.IsNullOrEmpty(bs.ShapeName)) continue;
 
-                SkinnedMeshRenderer renderer = ResolveRenderer(root, bs.RendererPath, variant.Name, removedPaths) as SkinnedMeshRenderer;
-                if (renderer == null) continue;
+                Renderer resolved = ResolveRenderer(root, bs.RendererPath, variant.Name, removedPaths);
+                if (resolved == null) continue;
+
+                // 削除済みで飛ばすのと、型が違う設定ミスとを分ける。
+                // まとめて null 扱いにすると、設定ミスが黙って通って別の内容が上がる。
+                SkinnedMeshRenderer renderer = resolved as SkinnedMeshRenderer;
+                if (renderer == null)
+                {
+                    throw new System.Exception(string.Format(LocalizeDict.build_no_skinned_renderer,
+                        variant.Name, bs.RendererPath));
+                }
 
                 Mesh mesh = renderer.sharedMesh;
                 int index = mesh != null ? mesh.GetBlendShapeIndex(bs.ShapeName) : -1;
@@ -169,6 +175,19 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
+        /// 既に消したオブジェクト自身か、その配下か。
+        ///
+        /// 自分自身も含める。同じパスが 2 回並んでいると、2 回目は消えた後になって
+        /// 見つからないが、これは設定ミスではないので止めてはいけない。
+        /// パスの比較なので、カルチャに左右されない Ordinal で行う。
+        /// </summary>
+        private static bool IsAlreadyRemoved(string path, List<string> removedPaths)
+        {
+            return removedPaths.Any(p => path == p
+                                         || path.StartsWith(p + "/", System.StringComparison.Ordinal));
+        }
+
+        /// <summary>
         /// パスから Renderer を引く。既に削除された配下なら null を返して黙って飛ばし、
         /// そうでなければ設定ミスなので例外にする。
         /// </summary>
@@ -178,7 +197,7 @@ namespace MinMinMart.AvatarVariant.Editor
             Transform t = AvatarVariantProfile.FindByPath(root.transform, path);
             if (t == null)
             {
-                if (removedPaths.Any(p => path == p || path.StartsWith(p + "/"))) return null;
+                if (IsAlreadyRemoved(path, removedPaths)) return null;
 
                 throw new System.Exception(string.Format(LocalizeDict.build_target_missing, variantName, path));
             }

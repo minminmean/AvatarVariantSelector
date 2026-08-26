@@ -138,7 +138,6 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
             AvatarVariantProfile profile = (AvatarVariantProfile)profileSo.targetObject;
-            AvatarVariantDefinition pending = profile.PendingVariant;
 
             for (int i = 0; i < variants.arraySize; i++)
             {
@@ -146,12 +145,9 @@ namespace MinMinMart.AvatarVariant.Editor
                 SerializedProperty nameProp = variant.FindPropertyRelative("Name");
                 SerializedProperty idProp = variant.FindPropertyRelative("BlueprintId");
 
-                // 選択中の印は切り替えボタンと同じ基準で付ける。Blueprint ID がまだ無い
-                // バリアントは ID で判別できないので、新規アップロード待ちの指定を見る。
+                // 選択中の判定はプロファイルに任せる。ここで組み直すとビルド時の判断とずれる。
                 AvatarVariantDefinition definition = i < profile.Variants.Count ? profile.Variants[i] : null;
-                bool isCurrent = string.IsNullOrEmpty(idProp.stringValue)
-                    ? definition != null && definition == pending
-                    : pm != null && idProp.stringValue == pm.blueprintId;
+                bool isCurrent = profile.IsSelected(definition, pm != null ? pm.blueprintId : null);
 
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
@@ -323,9 +319,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     // 押す操作は 1 つ。上書きか新規かは Blueprint ID の有無で決まるので、
                     // 文言だけを変えて、どちらになるか分かるようにする。
                     bool isNew = string.IsNullOrEmpty(variant.BlueprintId);
-                    bool isCurrent = isNew
-                        ? profile.PendingVariant == variant
-                        : variant.BlueprintId == pm.blueprintId;
+                    bool isCurrent = profile.IsSelected(variant, pm.blueprintId);
 
                     using (new EditorGUI.DisabledScope(isCurrent))
                     {

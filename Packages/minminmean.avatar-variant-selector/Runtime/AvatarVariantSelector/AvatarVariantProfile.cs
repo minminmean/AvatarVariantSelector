@@ -131,6 +131,19 @@ namespace MinMinMart.AvatarVariant
             return pending;
         }
 
+        /// <summary>
+        /// <paramref name="variant"/> が今ビルド対象に選ばれているか。
+        ///
+        /// 判定をビルド時とまったく同じ経路に通す。表示側で別に組み直すと、
+        /// 上のステータスは「対象」と出ているのに一覧の印が消えている、といった食い違いが起きる。
+        /// </summary>
+        public bool IsSelected(AvatarVariantDefinition variant, string blueprintId)
+        {
+            if (variant == null) return false;
+
+            return ResolveForBuild(blueprintId, out bool _) == variant;
+        }
+
         // ---------- パスの相互変換 ----------
 
         /// <summary>
