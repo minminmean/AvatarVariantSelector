@@ -176,5 +176,15 @@ namespace MinMinMart.AvatarVariant
             if (root == null || string.IsNullOrEmpty(path)) return null;
             return root.Find(path);
         }
+
+        /// <summary>
+        /// 相対パスの先にある <typeparamref name="T"/>。パスが切れているか、
+        /// そのコンポーネントが無ければ null。
+        /// </summary>
+        public static T FindComponentByPath<T>(Transform root, string path) where T : Component
+        {
+            Transform t = FindByPath(root, path);
+            return t != null ? t.GetComponent<T>() : null;
+        }
     }
 }

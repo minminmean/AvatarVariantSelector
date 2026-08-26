@@ -57,10 +57,8 @@ namespace MinMinMart.AvatarVariant.Editor
             pending.BlueprintId = pm.blueprintId;
             profile.PendingVariantKey = "";
 
-            // このアセットだけを保存する。AssetDatabase.SaveAssets() は
-            // 他の未保存アセットまで巻き添えで書き込んでしまうので使わない。
             EditorUtility.SetDirty(profile);
-            AssetDatabase.SaveAssetIfDirty(profile);
+            AvatarVariantProfileSaver.Save(profile);
 
             Debug.Log(string.Format(AvatarVariantLocalize.Dictionary.log_wrote_back, pending.Name, pm.blueprintId), profile);
         }

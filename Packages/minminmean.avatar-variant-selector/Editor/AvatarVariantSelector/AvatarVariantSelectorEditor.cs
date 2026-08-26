@@ -34,15 +34,82 @@ namespace MinMinMart.AvatarVariant.Editor
         // このとき PipelineManager に残っている ID は、消えたバリアントのものになる。
         private bool _deletedCurrentVariant;
 
+        // ---------- スタイル ----------
 
+        /// <summary>
+        /// 毎描画で new せず使い回す GUIStyle。
+        ///
+        /// 静的初期化子では作らない。EditorStyles がまだ用意できていない段階で
+        /// 触るとエラーになるため、実際に使う直前（OnInspectorGUI の先頭）で遅延生成する。
+        /// ライト/ダーク切り替えで EditorStyles 自体が作り直されるので、isProSkin の値が
+        /// 変わったときも作り直す。
+        /// </summary>
+        private static class Styles
+        {
+            private static bool _initialized;
+            private static bool _isProSkin;
+
+            internal static GUIStyle StatusBox;
+            internal static GUIStyle StatusLineOk;
+            internal static GUIStyle StatusLineWarn;
+            internal static GUIStyle CurrentMarker;
+            internal static GUIStyle PlaceholderLabel;
+
+            internal static void EnsureInitialized()
+            {
+                bool isProSkin = EditorGUIUtility.isProSkin;
+                if (_initialized && _isProSkin == isProSkin) return;
+
+                _initialized = true;
+                _isProSkin = isProSkin;
+
+                // 枠と中身を分けて描く。1 つのラベルに改行を入れると行間を詰められないので、
+                // 枠だけ先に用意して、その中に 1 行ずつ置く。
+                StatusBox = new GUIStyle(EditorStyles.helpBox)
+                {
+                    padding = new RectOffset(14, 8, 10, 10),
+                };
+
+                GUIStyle statusLine = new GUIStyle(EditorStyles.label)
+                {
+                    fontSize = 13,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleLeft,
+                    wordWrap = true,
+                };
+
+                // ビルド対象の有無で色を出し分ける。緑用・オレンジ用の 2 つを持っておき、
+                // 呼び出し側は状態に応じてどちらを使うか選ぶだけにする。
+                StatusLineOk = new GUIStyle(statusLine);
+                StatusLineOk.normal.textColor = new Color(0.35f, 0.75f, 0.35f);
+
+                StatusLineWarn = new GUIStyle(statusLine);
+                StatusLineWarn.normal.textColor = new Color(0.9f, 0.5f, 0.3f);
+
+                CurrentMarker = new GUIStyle(EditorStyles.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    padding = new RectOffset(0, 0, 0, 0),
+                };
+                CurrentMarker.normal.textColor = new Color(0.35f, 0.75f, 0.35f);
+
+                PlaceholderLabel = new GUIStyle(EditorStyles.label)
+                {
+                    fontStyle = FontStyle.Italic,
+                    padding = new RectOffset(2, 2, 0, 0),
+                };
+                PlaceholderLabel.normal.textColor = new Color(0.5f, 0.5f, 0.5f, 0.9f);
+            }
+        }
 
         public override void OnInspectorGUI()
         {
+            Styles.EnsureInitialized();
+
             AvatarVariantSelector selector = (AvatarVariantSelector)target;
-            Transform rootTransform = AvatarRootFinder.Find(selector.transform);
-            GameObject root = rootTransform != null ? rootTransform.gameObject : null;
-            VRC.Core.PipelineManager pm = rootTransform != null
-                ? rootTransform.GetComponent<VRC.Core.PipelineManager>()
+            Transform root = AvatarRootFinder.Find(selector.transform);
+            VRC.Core.PipelineManager pm = root != null
+                ? root.GetComponent<VRC.Core.PipelineManager>()
                 : null;
 
             AvatarVariantLocalize.DrawLanguagePopup();
@@ -132,10 +199,10 @@ namespace MinMinMart.AvatarVariant.Editor
 
         // ---------- バリアント一覧 ----------
 
-        private void DrawVariants(SerializedObject profileSo, GameObject root, VRC.Core.PipelineManager pm)
+        private void DrawVariants(SerializedObject profileSo, Transform root, VRC.Core.PipelineManager pm)
         {
             SerializedProperty variants = profileSo.FindProperty("Variants");
-            EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
+            GUILayout.Label(string.Format(LocalizeDict.variants_header, variants.arraySize), EditorStyles.boldLabel);
 
             AvatarVariantProfile profile = (AvatarVariantProfile)profileSo.targetObject;
 
@@ -157,36 +224,25 @@ namespace MinMinMart.AvatarVariant.Editor
                     int indent = EditorGUI.indentLevel;
                     EditorGUI.indentLevel = 0;
 
-                    float x = row.x;
-                    Rect foldRect = new Rect(x, row.y, FoldoutWidth, row.height);
-                    x += FoldoutWidth;
-                    Rect markRect = new Rect(x, row.y, MarkerWidth, row.height);
-                    x += MarkerWidth;
-
-                    Rect delRect = new Rect(row.xMax - ButtonWidth, row.y, ButtonWidth, row.height);
-                    Rect dupRect = new Rect(delRect.x - ButtonWidth - 2f, row.y, ButtonWidth, row.height);
-
-                    float fieldsWidth = dupRect.x - Gap - x;
-                    float nameWidth = Mathf.Max(70f, fieldsWidth * NameFieldRatio);
-                    Rect nameRect = new Rect(x, row.y, nameWidth, row.height);
-                    Rect idRect = new Rect(x + nameWidth + Gap, row.y, fieldsWidth - nameWidth - Gap, row.height);
+                    VariantRowRects rects = LayoutVariantRow(row);
 
                     bool expanded = FoldoutState.GetExpanded(variant);
-                    expanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
+                    expanded = EditorGUI.Foldout(rects.Foldout, expanded, GUIContent.none, true);
                     FoldoutState.SetExpanded(variant, expanded);
-                    DrawCurrentMarker(markRect, isCurrent);
+                    DrawCurrentMarker(rects.Marker, isCurrent);
                     AvatarVariantProfileSaver.NameWatchedField(nameProp.propertyPath);
-                    DrawFieldWithPlaceholder(nameRect, nameProp, LocalizeDict.placeholder_name);
+                    DrawFieldWithPlaceholder(rects.Name, nameProp, LocalizeDict.placeholder_name);
                     AvatarVariantProfileSaver.NameWatchedField(idProp.propertyPath);
-                    DrawFieldWithPlaceholder(idRect, idProp, LocalizeDict.placeholder_id);
+                    DrawFieldWithPlaceholder(rects.Id, idProp, LocalizeDict.placeholder_id);
 
-                    bool duplicate = GUI.Button(dupRect, LocalizeDict.duplicate);
-                    bool delete = GUI.Button(delRect, LocalizeDict.delete);
+                    bool duplicate = GUI.Button(rects.Duplicate, LocalizeDict.duplicate);
+                    bool delete = GUI.Button(rects.Delete, LocalizeDict.delete);
                     EditorGUI.indentLevel = indent;
 
                     if (duplicate)
                     {
                         DuplicateVariant(variants, i);
+                        AvatarVariantProfileSaver.Request();
                         return;
                     }
 
@@ -200,6 +256,7 @@ namespace MinMinMart.AvatarVariant.Editor
                                 string.Format(LocalizeDict.delete_dialog_message, title), LocalizeDict.delete, LocalizeDict.delete_dialog_cancel))
                         {
                             variants.DeleteArrayElementAtIndex(i);
+                            AvatarVariantProfileSaver.Request();
                             _selectionNeedsFixing = true;
                             _deletedCurrentVariant = isCurrent;
                         }
@@ -209,26 +266,80 @@ namespace MinMinMart.AvatarVariant.Editor
 
                     if (!expanded) continue;
 
-                    EditorGUILayout.Space(2);
-                    EditorGUILayout.LabelField(LocalizeDict.operations_header, EditorStyles.miniBoldLabel);
-
-                    Transform rootT = root != null ? root.transform : null;
-                    VariantOperationGui.DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), rootT);
-                    VariantOperationGui.DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), rootT);
-                    VariantOperationGui.DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), rootT);
+                    DrawVariantOperations(variant, root);
                 }
             }
 
             if (GUILayout.Button(LocalizeDict.add_variant))
             {
                 AddBlankVariant(variants);
+                AvatarVariantProfileSaver.Request();
                 _selectionNeedsFixing = true;
             }
         }
 
-        // ---------- ヘッダー ----------
+        /// <summary>
+        /// バリアント一覧 1 行ぶんの矩形。<see cref="EditorGUILayout.GetControlRect"/> で取った
+        /// 行全体の矩形を、フォールドアウト・マーカー・名前・ID・複製・削除の各欄に割り振る。
+        /// </summary>
+        private readonly struct VariantRowRects
+        {
+            internal readonly Rect Foldout;
+            internal readonly Rect Marker;
+            internal readonly Rect Name;
+            internal readonly Rect Id;
+            internal readonly Rect Duplicate;
+            internal readonly Rect Delete;
 
-        private static void DrawStatus(AvatarVariantProfile profile, GameObject root, VRC.Core.PipelineManager pm)
+            internal VariantRowRects(Rect foldout, Rect marker, Rect name, Rect id, Rect duplicate, Rect delete)
+            {
+                Foldout = foldout;
+                Marker = marker;
+                Name = name;
+                Id = id;
+                Duplicate = duplicate;
+                Delete = delete;
+            }
+        }
+
+        /// <summary>
+        /// 行全体の矩形を各欄に割り振る。純粋な算術だけで、コントロール ID を消費する処理は含まない。
+        /// </summary>
+        private static VariantRowRects LayoutVariantRow(Rect row)
+        {
+            float x = row.x;
+            Rect foldRect = new Rect(x, row.y, FoldoutWidth, row.height);
+            x += FoldoutWidth;
+            Rect markRect = new Rect(x, row.y, MarkerWidth, row.height);
+            x += MarkerWidth;
+
+            Rect delRect = new Rect(row.xMax - ButtonWidth, row.y, ButtonWidth, row.height);
+            Rect dupRect = new Rect(delRect.x - ButtonWidth - 2f, row.y, ButtonWidth, row.height);
+
+            float fieldsWidth = dupRect.x - Gap - x;
+            float nameWidth = Mathf.Max(70f, fieldsWidth * NameFieldRatio);
+            Rect nameRect = new Rect(x, row.y, nameWidth, row.height);
+            Rect idRect = new Rect(x + nameWidth + Gap, row.y, fieldsWidth - nameWidth - Gap, row.height);
+
+            return new VariantRowRects(foldRect, markRect, nameRect, idRect, dupRect, delRect);
+        }
+
+        /// <summary>
+        /// 展開時に出す操作リスト（削除・マテリアル・ブレンドシェイプ）。
+        /// </summary>
+        private static void DrawVariantOperations(SerializedProperty variant, Transform root)
+        {
+            EditorGUILayout.Space(2);
+            GUILayout.Label(LocalizeDict.operations_header, EditorStyles.miniBoldLabel);
+
+            VariantOperationGui.DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), root);
+            VariantOperationGui.DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), root);
+            VariantOperationGui.DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), root);
+        }
+
+        // ---------- ビルド対象と切り替え ----------
+
+        private static void DrawStatus(AvatarVariantProfile profile, Transform root, VRC.Core.PipelineManager pm)
         {
             if (root == null)
             {
@@ -243,23 +354,7 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             AvatarVariantDefinition current = profile.ResolveForBuild(pm.blueprintId, out bool _);
-            // 枠と中身を分けて描く。1 つのラベルに改行を入れると行間を詰められないので、
-            // 枠だけ先に用意して、その中に 1 行ずつ置く。
-            GUIStyle boxStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(14, 8, 10, 10),
-            };
-
-            GUIStyle lineStyle = new GUIStyle(EditorStyles.label)
-            {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
-                wordWrap = true,
-            };
-            lineStyle.normal.textColor = current != null
-                ? new Color(0.35f, 0.75f, 0.35f)
-                : new Color(0.9f, 0.5f, 0.3f);
+            GUIStyle lineStyle = current != null ? Styles.StatusLineOk : Styles.StatusLineWarn;
 
             // 名前が空でも書式は変えない。差し込む文字だけ「(名前なし)」に替えて、
             // 「ビルド対象: 〜」の並びを崩さないようにする。
@@ -270,7 +365,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 caption = string.Format(LocalizeDict.build_target, name);
             }
 
-            using (new EditorGUILayout.VerticalScope(boxStyle))
+            using (new EditorGUILayout.VerticalScope(Styles.StatusBox))
             {
                 GUILayout.Label(caption, lineStyle);
 
@@ -291,11 +386,11 @@ namespace MinMinMart.AvatarVariant.Editor
             }
         }
 
-        private void DrawSwitcher(AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
+        private static void DrawSwitcher(AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
         {
             if (pm == null) return;
 
-            EditorGUILayout.LabelField(LocalizeDict.switch_header, EditorStyles.boldLabel);
+            GUILayout.Label(LocalizeDict.switch_header, EditorStyles.boldLabel);
 
             if (profile.Variants.All(v => v == null))
             {
@@ -333,18 +428,6 @@ namespace MinMinMart.AvatarVariant.Editor
             }
         }
 
-        // ---------- 名前の適用 ----------
-
-        /// <summary>
-        /// 「適用」ボタンを描き、押されたかどうかを返す。
-        ///
-        /// 押せないときも必ず描く。ボタン自体が出入りすると、それがコントロール ID を
-        /// ずらしてしまい、防ごうとしているフォーカス外れをこのボタンが起こしてしまう。
-        /// </summary>
-
-
-
-
         /// <summary>
         /// 切り替えボタンの書式。
         ///
@@ -358,17 +441,16 @@ namespace MinMinMart.AvatarVariant.Editor
             return isNew ? LocalizeDict.mark_new_upload : LocalizeDict.switch_to;
         }
 
-
-        // ---------- 検証 ----------
+        // ---------- 通知欄 ----------
 
         /// <summary>
-        /// WarnとInfoを書き出す。
+        /// Warn と Info を描く。
         /// どちらも内容はAvatarVariantNoticeCollectorに責務がある。
         /// </summary>
-        private void DrawNotices(AvatarVariantProfile profile, GameObject root, string blueprintId)
+        private static void DrawNotices(AvatarVariantProfile profile, Transform root, string blueprintId)
         {
-            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectProblems(profile, root, blueprintId), MessageType.Warning);
-            DrawHelpBoxs(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
+            DrawHelpBoxes(AvatarVariantNoticeCollector.CollectProblems(profile, root, blueprintId), MessageType.Warning);
+            DrawHelpBoxes(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
         }
 
         // ---------- 補助 ----------
@@ -376,7 +458,7 @@ namespace MinMinMart.AvatarVariant.Editor
         // 渡された List<string> で HelpBox を描画する。
         //
         // 同じ文言は最初の 1 件だけ描く。
-        private static void DrawHelpBoxs(List<string> messages, MessageType messageType)
+        private static void DrawHelpBoxes(List<string> messages, MessageType messageType)
         {
             HashSet<string> drawnMessages = new HashSet<string>();
 
@@ -397,13 +479,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             if (!isCurrent) return;
 
-            GUIStyle style = new GUIStyle(EditorStyles.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                padding = new RectOffset(0, 0, 0, 0),
-            };
-            style.normal.textColor = new Color(0.35f, 0.75f, 0.35f);
-            GUI.Label(rect, "●", style);
+            GUI.Label(rect, "●", Styles.CurrentMarker);
         }
 
         private static void DrawFieldWithPlaceholder(Rect rect, SerializedProperty prop, string placeholder)
@@ -411,16 +487,9 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorGUI.PropertyField(rect, prop, GUIContent.none);
             if (!string.IsNullOrEmpty(prop.stringValue)) return;
 
-            GUIStyle style = new GUIStyle(EditorStyles.label)
-            {
-                fontStyle = FontStyle.Italic,
-                padding = new RectOffset(2, 2, 0, 0),
-            };
-            style.normal.textColor = new Color(0.5f, 0.5f, 0.5f, 0.9f);
-
             // ラベルは操作を奪わないので、下のテキスト欄はそのままクリック・入力できる。
             // GUI.Label にしているのは ● と同じ理由で、欄の出入りで ID をずらさないため。
-            GUI.Label(new Rect(rect.x + 2f, rect.y, rect.width - 4f, rect.height), placeholder, style);
+            GUI.Label(new Rect(rect.x + 2f, rect.y, rect.width - 4f, rect.height), placeholder, Styles.PlaceholderLabel);
         }
 
         /// <summary>

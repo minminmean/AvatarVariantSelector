@@ -14,12 +14,42 @@ namespace MinMinMart.AvatarVariant.Editor
         private static AvatarVariantLocalizeDictionary LocalizeDict => AvatarVariantLocalize.Dictionary;
 
         /// <summary>
+        /// 毎描画で new せず使い回す GUIStyle。
+        ///
+        /// 静的初期化子では作らない。EditorStyles がまだ用意できていない段階で
+        /// 触るとエラーになるため、実際に使う直前（Draw の先頭）で遅延生成する。
+        /// ライト/ダーク切り替えで EditorStyles 自体が作り直されるので、isProSkin の値が
+        /// 変わったときも作り直す。
+        /// </summary>
+        private static class Styles
+        {
+            private static bool _initialized;
+            private static bool _isProSkin;
+
+            internal static GUIStyle BrokenPathLabel;
+
+            internal static void EnsureInitialized()
+            {
+                bool isProSkin = EditorGUIUtility.isProSkin;
+                if (_initialized && _isProSkin == isProSkin) return;
+
+                _initialized = true;
+                _isProSkin = isProSkin;
+
+                BrokenPathLabel = new GUIStyle(EditorStyles.miniLabel);
+                BrokenPathLabel.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
+            }
+        }
+
+        /// <summary>
         /// パス 1 件分の編集欄。
         /// </summary>
         internal static void Draw(SerializedProperty pathProp, Transform root)
         {
+            Styles.EnsureInitialized();
+
             string path = pathProp.stringValue;
-            Transform found = root != null ? AvatarVariantProfile.FindByPath(root, path) : null;
+            Transform found = AvatarVariantProfile.FindByPath(root, path);
             bool broken = found == null && !string.IsNullOrEmpty(path);
 
             EditorGUI.BeginChangeCheck();
@@ -50,11 +80,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (!broken) return;
 
-            GUIStyle style = new GUIStyle(EditorStyles.miniLabel);
-            style.normal.textColor = new Color(0.9f, 0.45f, 0.35f);
             // GUI.Label はコントロール ID を消費しない。この行は broken の真偽で出入りするので、
             // ID を消費すると後ろに続く入力欄の ID がズレてフォーカスが外れる。
-            GUILayout.Label(string.Format(LocalizeDict.path_broken, path), style);
+            GUILayout.Label(string.Format(LocalizeDict.path_broken, path), Styles.BrokenPathLabel);
         }
 
         /// <summary>

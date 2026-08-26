@@ -46,7 +46,7 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             EditorUtility.SetDirty(profile);
-            AssetDatabase.SaveAssetIfDirty(profile);
+            AvatarVariantProfileSaver.Save(profile);
 
             WriteBlueprintId(pm, variant.BlueprintId);
 

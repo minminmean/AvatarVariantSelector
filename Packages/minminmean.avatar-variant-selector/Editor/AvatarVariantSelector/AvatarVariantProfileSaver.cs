@@ -36,9 +36,9 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// 次に描くコントロールを、フォーカスが外れた時点で書き出す対象として名付ける。
         /// </summary>
-        internal static void NameWatchedField(string id)
+        internal static void NameWatchedField(string propertyPath)
         {
-            GUI.SetNextControlName(WatchedFieldPrefix + id);
+            GUI.SetNextControlName(WatchedFieldPrefix + propertyPath);
         }
 
         /// <summary>
@@ -80,6 +80,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
         /// <summary>
         /// その場で書き出す。変更が無ければ何も起きない。
+        ///
+        /// このアセットだけを保存する。AssetDatabase.SaveAssets() は他の未保存アセットまで
+        /// 巻き添えで書き込んでしまうので使わない。
         /// </summary>
         internal static void Save(AvatarVariantProfile profile)
         {

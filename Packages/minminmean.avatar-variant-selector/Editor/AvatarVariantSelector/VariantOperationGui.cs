@@ -28,16 +28,7 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 for (int i = 0; i < paths.arraySize; i++)
                 {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        ObjectPathField.Draw(paths.GetArrayElementAtIndex(i), root);
-                        if (GUILayout.Button("−", GUILayout.Width(22)))
-                        {
-                            paths.DeleteArrayElementAtIndex(i);
-                            AvatarVariantProfileSaver.Request();
-                            return;
-                        }
-                    }
+                    if (DrawPathRow(paths, i, paths.GetArrayElementAtIndex(i), root)) return;
                 }
 
                 ObjectPathField.DrawDropArea(paths, root);
@@ -58,27 +49,18 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 for (int i = 0; i < list.arraySize; i++)
                 {
-                    SerializedProperty e = list.GetArrayElementAtIndex(i);
+                    SerializedProperty entry = list.GetArrayElementAtIndex(i);
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            ObjectPathField.Draw(e.FindPropertyRelative("RendererPath"), root);
-                            if (GUILayout.Button("−", GUILayout.Width(22)))
-                            {
-                                list.DeleteArrayElementAtIndex(i);
-                                AvatarVariantProfileSaver.Request();
-                                return;
-                            }
-                        }
+                        if (DrawPathRow(list, i, entry.FindPropertyRelative("RendererPath"), root)) return;
 
-                        SerializedProperty slotProp = e.FindPropertyRelative("Slot");
+                        SerializedProperty slotProp = entry.FindPropertyRelative("Slot");
                         AvatarVariantProfileSaver.NameWatchedField(slotProp.propertyPath);
                         EditorGUILayout.PropertyField(slotProp, new GUIContent(LocalizeDict.field_slot));
 
                         // 差し替え先の指定は 1 回きりの操作なので、その場で確定させる。
                         EditorGUI.BeginChangeCheck();
-                        EditorGUILayout.PropertyField(e.FindPropertyRelative("Material"), new GUIContent(LocalizeDict.field_material));
+                        EditorGUILayout.PropertyField(entry.FindPropertyRelative("Material"), new GUIContent(LocalizeDict.field_material));
                         if (EditorGUI.EndChangeCheck()) AvatarVariantProfileSaver.Request();
                     }
                 }
@@ -105,23 +87,14 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 for (int i = 0; i < list.arraySize; i++)
                 {
-                    SerializedProperty e = list.GetArrayElementAtIndex(i);
-                    SerializedProperty pathProp = e.FindPropertyRelative("RendererPath");
+                    SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                    SerializedProperty pathProp = entry.FindPropertyRelative("RendererPath");
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            ObjectPathField.Draw(pathProp, root);
-                            if (GUILayout.Button("−", GUILayout.Width(22)))
-                            {
-                                list.DeleteArrayElementAtIndex(i);
-                                AvatarVariantProfileSaver.Request();
-                                return;
-                            }
-                        }
+                        if (DrawPathRow(list, i, pathProp, root)) return;
 
-                        DrawShapePopup(e.FindPropertyRelative("ShapeName"), pathProp, root);
-                        SerializedProperty valueProp = e.FindPropertyRelative("Value");
+                        DrawShapePopup(entry.FindPropertyRelative("ShapeName"), pathProp, root);
+                        SerializedProperty valueProp = entry.FindPropertyRelative("Value");
                         AvatarVariantProfileSaver.NameWatchedField(valueProp.propertyPath);
                         EditorGUILayout.Slider(valueProp, 0f, 100f, new GUIContent(LocalizeDict.field_value));
                     }
@@ -136,17 +109,37 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
+        /// 対象の指定欄と、その行を消すボタン。消したときは true を返す
+        /// （呼び出し側は、その場で描画を打ち切ること）。
+        /// </summary>
+        private static bool DrawPathRow(SerializedProperty list, int index, SerializedProperty pathProp, Transform root)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                ObjectPathField.Draw(pathProp, root);
+                if (GUILayout.Button("−", GUILayout.Width(22)))
+                {
+                    list.DeleteArrayElementAtIndex(index);
+                    AvatarVariantProfileSaver.Request();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// 対象メッシュが実際に持つシェイプ名をドロップダウンで選ばせる。打ち間違いを防ぐため。
         /// </summary>
         private static void DrawShapePopup(SerializedProperty nameProp, SerializedProperty pathProp, Transform root)
         {
-            Transform t = root != null ? AvatarVariantProfile.FindByPath(root, pathProp.stringValue) : null;
-            SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
+            SkinnedMeshRenderer smr = AvatarVariantProfile.FindComponentByPath<SkinnedMeshRenderer>(root, pathProp.stringValue);
             Mesh mesh = smr != null ? smr.sharedMesh : null;
 
             if (mesh == null || mesh.blendShapeCount == 0)
             {
                 // 選択肢を出せる対象が無いときは、既存の値を編集できるよう素のテキスト欄にする。
+                AvatarVariantProfileSaver.NameWatchedField(nameProp.propertyPath);
                 EditorGUILayout.PropertyField(nameProp, new GUIContent(LocalizeDict.field_shape));
                 return;
             }

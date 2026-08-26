@@ -21,7 +21,7 @@ namespace MinMinMart.AvatarVariant.Editor
         ///
         /// <paramref name="root"/> が null のときは、基準が無いのでパスの生存確認を飛ばす。
         /// </summary>
-        internal static List<string> CollectProblems(AvatarVariantProfile profile, GameObject root, string blueprintId)
+        internal static List<string> CollectProblems(AvatarVariantProfile profile, Transform root, string blueprintId)
         {
             List<string> problems = new List<string>();
 
@@ -37,20 +37,18 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             List<string> ids = profile.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
-            Transform rootT = root != null ? root.transform : null;
 
-            foreach (AvatarVariantDefinition v in profile.Variants.Where(v => v != null))
+            foreach (AvatarVariantDefinition variant in profile.Variants.Where(v => v != null))
             {
-                string duplicateId = CheckDuplicateId(v, ids);
+                string duplicateId = CheckDuplicateId(variant, ids);
                 if (duplicateId != null) problems.Add(duplicateId);
 
-                if (rootT == null) continue;
+                if (root == null) continue;
 
-                problems.AddRange(CheckRemovePaths(v, rootT));
-                problems.AddRange(CheckMaterialOverrides(v, rootT));
-                problems.AddRange(CheckBlendShapes(v, rootT));
+                problems.AddRange(CheckRemovePaths(variant, root));
+                problems.AddRange(CheckMaterialOverrides(variant, root));
+                problems.AddRange(CheckBlendShapes(variant, root));
             }
-
 
             return problems;
         }
@@ -110,8 +108,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (VariantMaterialOverride mo in variant.MaterialOverrides.Where(mo => mo != null && !string.IsNullOrEmpty(mo.RendererPath)))
             {
-                Transform t = AvatarVariantProfile.FindByPath(root, mo.RendererPath);
-                Renderer r = t != null ? t.GetComponent<Renderer>() : null;
+                Renderer r = AvatarVariantProfile.FindComponentByPath<Renderer>(root, mo.RendererPath);
 
                 if (r == null)
                 {
@@ -136,8 +133,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             foreach (VariantBlendShapeChange bs in variant.BlendShapeChanges.Where(bs => bs != null && !string.IsNullOrEmpty(bs.RendererPath)))
             {
-                Transform t = AvatarVariantProfile.FindByPath(root, bs.RendererPath);
-                SkinnedMeshRenderer smr = t != null ? t.GetComponent<SkinnedMeshRenderer>() : null;
+                SkinnedMeshRenderer smr = AvatarVariantProfile.FindComponentByPath<SkinnedMeshRenderer>(root, bs.RendererPath);
 
                 if (smr == null || smr.sharedMesh == null)
                 {
@@ -155,9 +151,5 @@ namespace MinMinMart.AvatarVariant.Editor
 
             return problems;
         }
-
-
-
-
     }
 }

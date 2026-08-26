@@ -45,6 +45,33 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantSelector[] selectors = root.GetComponentsInChildren<AvatarVariantSelector>(true);
             if (selectors.Length == 0) return;
 
+            AvatarVariantDefinition variant = ResolveTargetVariant(root, selectors);
+
+            if (variant == null)
+            {
+                // どのバリアントも選ばれていない。Blueprint ID も空で上書き先が無いので、
+                // 何も適用せず PipelineManager に入っている指定のままアップロードさせる。
+                Debug.Log(LocalizeDict.build_no_selection);
+            }
+            else
+            {
+                ApplyVariant(variant, root);
+            }
+
+            // ビルド成果物に残さない。
+            foreach (AvatarVariantSelector s in selectors)
+            {
+                Object.DestroyImmediate(s);
+            }
+        }
+
+        /// <summary>
+        /// ビルド対象のバリアントを決める。選ばれていなければ null。
+        /// コンポーネントの数やプロファイルの有無、Blueprint ID の不一致など、
+        /// ビルドを続けられない状態はここで例外にする。
+        /// </summary>
+        private static AvatarVariantDefinition ResolveTargetVariant(GameObject root, AvatarVariantSelector[] selectors)
+        {
             if (selectors.Length > 1)
             {
                 throw new System.Exception(string.Format(LocalizeDict.build_multiple_selectors, root.name, selectors.Length));
@@ -78,33 +105,31 @@ namespace MinMinMart.AvatarVariant.Editor
                     LocalizeDict.build_hint_switch));
             }
 
-            if (variant == null)
+            if (variant != null && viaPending)
             {
-                // どのバリアントも選ばれていない。Blueprint ID も空で上書き先が無いので、
-                // 何も適用せず PipelineManager に入っている指定のままアップロードさせる。
-                Debug.Log(LocalizeDict.build_no_selection);
-            }
-            else
-            {
-                if (viaPending)
-                {
-                    Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
-                }
-
-                ApplyVariant(variant, root);
+                Debug.Log(string.Format(LocalizeDict.build_via_pending, variant.Name));
             }
 
-            // ビルド成果物に残さない。
-            foreach (AvatarVariantSelector s in selectors)
-            {
-                Object.DestroyImmediate(s);
-            }
+            return variant;
         }
 
         private static void ApplyVariant(AvatarVariantDefinition variant, GameObject root)
         {
             // 削除 → マテリアル → ブレンドシェイプ の順に適用する。
             // パスはビルド用コピーのルートを基準に引くので、実シーンに触れることは無い。
+            List<string> removedPaths = RemoveObjects(variant, root);
+            OverrideMaterials(variant, root, removedPaths);
+            SetBlendShapes(variant, root, removedPaths);
+
+            Debug.Log(string.Format(LocalizeDict.build_done, variant.Name,
+                removedPaths.Count, variant.MaterialOverrides.Count, variant.BlendShapeChanges.Count));
+        }
+
+        /// <summary>
+        /// 削除対象のオブジェクトを消し、実際に消したパスの一覧を返す。
+        /// </summary>
+        private static List<string> RemoveObjects(AvatarVariantDefinition variant, GameObject root)
+        {
             List<string> removedPaths = new List<string>();
 
             foreach (string path in variant.RemoveObjectPaths)
@@ -125,6 +150,14 @@ namespace MinMinMart.AvatarVariant.Editor
                 throw new System.Exception(string.Format(LocalizeDict.build_remove_missing, variant.Name, path));
             }
 
+            return removedPaths;
+        }
+
+        /// <summary>
+        /// マテリアルスロットを差し替える。
+        /// </summary>
+        private static void OverrideMaterials(AvatarVariantDefinition variant, GameObject root, List<string> removedPaths)
+        {
             foreach (VariantMaterialOverride mo in variant.MaterialOverrides)
             {
                 if (mo == null || string.IsNullOrEmpty(mo.RendererPath) || mo.Material == null) continue;
@@ -142,7 +175,13 @@ namespace MinMinMart.AvatarVariant.Editor
                 mats[mo.Slot] = mo.Material;
                 renderer.sharedMaterials = mats;
             }
+        }
 
+        /// <summary>
+        /// ブレンドシェイプの値を設定する。
+        /// </summary>
+        private static void SetBlendShapes(AvatarVariantDefinition variant, GameObject root, List<string> removedPaths)
+        {
             foreach (VariantBlendShapeChange bs in variant.BlendShapeChanges)
             {
                 if (bs == null || string.IsNullOrEmpty(bs.RendererPath) || string.IsNullOrEmpty(bs.ShapeName)) continue;
@@ -169,9 +208,6 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 renderer.SetBlendShapeWeight(index, bs.Value);
             }
-
-            Debug.Log(string.Format(LocalizeDict.build_done, variant.Name,
-                removedPaths.Count, variant.MaterialOverrides.Count, variant.BlendShapeChanges.Count));
         }
 
         /// <summary>
