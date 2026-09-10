@@ -25,7 +25,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public string profile_foreign;
         public string profile_foreign_duplicate;
-        public string profile_foreign_claim;
+        public string profile_foreign_register;
         public string profile_auto_duplicated;
         public string profile_auto_duplicated_dismiss;
 

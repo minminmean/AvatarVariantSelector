@@ -40,8 +40,8 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorUtility.SetDirty(selector);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
 
-            // 作った時点でこのセレクターを持ち主として記録しておく。
-            AvatarVariantProfileOwnership.Claim(profile, selector);
+            // 作った時点でこのセレクターだけを持ち主として登録しておく。
+            AvatarVariantProfileOwnership.SetSoleOwner(profile, selector);
 
             Debug.Log(string.Format(LocalizeDict.log_created_asset, path), profile);
         }
@@ -67,9 +67,9 @@ namespace MinMinMart.AvatarVariant.Editor
             AssetDatabase.CopyAsset(sourcePath, destPath);
             AvatarVariantProfile duplicate = AssetDatabase.LoadAssetAtPath<AvatarVariantProfile>(destPath);
 
-            // 複製自体を持ち主として記録する。コピー元の記録をそのまま引き継ぐと、
-            // 複製したそばから Foreign 判定になってしまう。
-            AvatarVariantProfileOwnership.Claim(duplicate, selector);
+            // 複製自体だけを持ち主として登録する。コピー元の登録一覧をそのまま引き継ぐと、
+            // 複製したそばから共有状態になってしまう。
+            AvatarVariantProfileOwnership.SetSoleOwner(duplicate, selector);
 
             Undo.RecordObject(selector, "Duplicate variant profile");
             selector.Profile = duplicate;

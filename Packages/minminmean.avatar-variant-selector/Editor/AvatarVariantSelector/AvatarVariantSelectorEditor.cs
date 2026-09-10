@@ -174,20 +174,37 @@ namespace MinMinMart.AvatarVariant.Editor
             profileSo.Update();
             EditorGUILayout.Space();
 
+            // 食い違っている間はバリアント一覧と切り替えボタンをロックするので、先に判定する。
+            AvatarVariantProfileOwnership.ProfileOwnershipState ownership =
+                AvatarVariantProfileOwnership.CheckForGui(profile, selector);
+            bool locked = ownership == AvatarVariantProfileOwnership.ProfileOwnershipState.Foreign;
+
+            // 食い違いの警告は、プロファイル欄のすぐ下・ロックされる内容より前に出す。
+            // 灰色になった理由が先に見えないと、なぜ操作できないのか分からないため。
+            // 「入力欄より手前に出入りするものを置くとフォーカスがずれる」という制約は下のコメントの
+            // とおり本来気にする必要があるが、Foreign の間はその入力欄自体が Disabled でフォーカスを
+            // 持てないので、この位置に置いても実害が無い。
+            if (locked)
+            {
+                if (DrawForeignNotice(profile, selector)) return;
+            }
+
             DrawStatus(profile, root, pm);
             EditorGUILayout.Space();
 
-            DrawVariants(profileSo, root, pm);
-            EditorGUILayout.Space();
-
-            // 切り替えボタンと警告は入力欄より後ろに置く。IMGUI はコントロールの並び順で
+            // 切り替えボタンは入力欄より後ろに置く。IMGUI はコントロールの並び順で
             // フォーカスを覚えているので、入力欄より手前に出入りするものがあると、
             // 打っている最中にフォーカスが隣のコントロールへ移ってしまう。
-            DrawSwitcher(profile, pm);
-            EditorGUILayout.Space();
+            using (new EditorGUI.DisabledScope(locked))
+            {
+                DrawVariants(profileSo, root, pm);
+                EditorGUILayout.Space();
 
-            // 複製して差し替えた場合はプロファイルが差し替わるので、以降の処理は次の描画に譲る。
-            if (DrawNotices(profile, selector, root, pm != null ? pm.blueprintId : null)) return;
+                DrawSwitcher(profile, pm);
+                EditorGUILayout.Space();
+            }
+
+            DrawNotices(profile, root, pm != null ? pm.blueprintId : null);
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。
@@ -483,35 +500,26 @@ namespace MinMinMart.AvatarVariant.Editor
 
         /// <summary>
         /// Warn と Info を描く。文字列だけの内容は <see cref="AvatarVariantNoticeCollector"/> に責務がある。
-        /// 持ち主の食い違いと自動複製のお知らせはボタンを伴うので、ここで直接描く。
+        /// 自動複製のお知らせはボタンを伴うので、ここで直接描く。
         ///
-        /// 戻り値は、プロファイルの差し替えが起きて以降の描画を続けられなくなったかどうか。
-        /// true のときは呼び出し側で OnInspectorGUI をそのまま抜けること。
+        /// 持ち主の食い違いの警告はここでは扱わない。ロックされる内容より前に出す必要があるため、
+        /// <see cref="DrawForeignNotice"/> として呼び出し側の早い段階で個別に描いている。
         /// </summary>
-        private static bool DrawNotices(AvatarVariantProfile profile, AvatarVariantSelector selector, Transform root, string blueprintId)
+        private static void DrawNotices(AvatarVariantProfile profile, Transform root, string blueprintId)
         {
-            // 持ち主の食い違いは、ビルド時に問題になるわけではないが一覧の中に紛れさせたくないので、
-            // 既存の警告 HelpBox より前に単独で出す。
-            AvatarVariantProfileOwnership.ProfileOwnershipState ownership = AvatarVariantProfileOwnership.CheckForGui(profile, selector);
-            if (ownership == AvatarVariantProfileOwnership.ProfileOwnershipState.Foreign)
-            {
-                if (DrawForeignNotice(profile, selector)) return true;
-            }
-
             DrawHelpBoxes(AvatarVariantNoticeCollector.CollectProblems(profile, root, blueprintId), MessageType.Warning);
             DrawHelpBoxes(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
 
             DrawAutoDuplicatedNotice(profile);
-
-            return false;
         }
 
         /// <summary>
-        /// 「このプロファイルは別のセレクターのものです」という警告と、対処の 2 択。
+        /// 「このプロファイルは別のセレクターに登録されています」という警告と、対処の 2 択。
         ///
-        /// 通知欄に置くのは、既存コードのコメントのとおり、入力欄より手前に出入りするものがあると
-        /// フォーカスが外れるため。ここも同じ理由でこの位置に置く。
-        /// 戻り値は、どちらかのボタンが押されてこの通知が消えるかどうか。
+        /// プロファイル欄のすぐ下、バリアント一覧より前に置く。灰色でロックされた一覧を先に見せても
+        /// なぜ触れないのか分からないため、理由になるこの警告を先に出す必要がある。
+        /// 戻り値は、どちらかのボタンが押されて食い違いが解消されたかどうか。
+        /// true のときは呼び出し側で OnInspectorGUI をそのまま抜けること。
         /// </summary>
         private static bool DrawForeignNotice(AvatarVariantProfile profile, AvatarVariantSelector selector)
         {
@@ -525,12 +533,13 @@ namespace MinMinMart.AvatarVariant.Editor
                     return true;
                 }
 
-                if (GUILayout.Button(LocalizeDict.profile_foreign_claim))
+                if (GUILayout.Button(LocalizeDict.profile_foreign_register))
                 {
-                    AvatarVariantProfileOwnership.Claim(profile, selector);
+                    AvatarVariantProfileOwnership.Register(profile, selector);
 
-                    // 押した時点でこの通知ごと消えるので、複製したときと同じく描画を打ち切る。
-                    // 数の変わるコントロールを描いたまま続けると、フォーカスの位置がずれる。
+                    // 押した時点でこの通知ごと消え、ロックしていたバリアント一覧などが有効になる。
+                    // 数の変わるコントロールを描いたまま続けると、フォーカスの位置がずれるので、
+                    // 複製したときと同じく描画を打ち切って次のフレームに譲る。
                     return true;
                 }
             }
