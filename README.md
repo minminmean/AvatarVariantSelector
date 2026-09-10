@@ -24,7 +24,7 @@ NDMFのビルドが行われる際、各バリアントに登録された操作�
 
 1. アバタールート( `VRC Avatar Descriptor` と同階層)に `Avatar Variant Selector` コンポーネントを追加します
 2. 「プロファイルを作成」を押して `Avatar Variant Profile` アセットを作ります
-   - `Assets/MinMinMart/AvatarVariantSelector/Profiles/` に、アバター名を付けて作られます
+   - `Assets/MinMinMart/AvatarVariantSelector/Profiles/` に、シーン名とアバター名を付けて作られます
 3. バリアントを追加し、名前と Blueprint ID を入力します
 4. 各バリアントに、ビルド時の操作を登録します
    - **削除するオブジェクト** — そのバリアントのビルドから取り除く
