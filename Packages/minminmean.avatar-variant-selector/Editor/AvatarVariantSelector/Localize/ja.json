@@ -8,10 +8,10 @@
     "no_avatar_root": "アバターのルート (VRCAvatarDescriptor) が見つかりません。このコンポーネントはアバター直下に置いてください。",
     "no_pipeline_manager": "'{0}' に PipelineManager がありません。",
 
-    "profile_foreign": "このプロファイルは別のセレクターが持ち主として記録されています。シーンやアバターを複製した際に、複製先がまだ元のプロファイルを参照していないか確認してください。",
-    "profile_foreign_duplicate": "複製して差し替える",
-    "profile_foreign_claim": "このセレクターを持ち主にする",
-    "profile_auto_duplicated": "採番された Blueprint ID を書き戻す際、このプロファイルが別のセレクターの持ち物だったため、自動で複製してから書き込みました。複製元のバリアントは変更していません。",
+    "profile_foreign": "このプロファイルは別のセレクターに登録されています。複製して分けるか、同じアバター構成として共有するなら登録してください。解決するまでバリアント一覧と切り替えは編集できません。",
+    "profile_foreign_duplicate": "複製して分ける",
+    "profile_foreign_register": "登録して共有する",
+    "profile_auto_duplicated": "採番された Blueprint ID を書き戻す際、このセレクターがこのプロファイルに登録されていなかったため、自動で複製してから書き込みました。複製元のバリアントは変更していません。",
     "profile_auto_duplicated_dismiss": "OK",
 
     "build_target": "ビルド対象: {0}",
@@ -72,7 +72,7 @@
     "log_created_asset": "[Avatar Variant] プロファイルを作成しました: {0}",
     "log_wrote_back": "[Avatar Variant] 採番された Blueprint ID をバリアント「{0}」に書き写して保存しました（{1}）。",
     "log_duplicated_profile": "[Avatar Variant] プロファイルを複製しました: {0}",
-    "log_auto_duplicated_profile": "[Avatar Variant] プロファイルの持ち主が別のセレクターだったため、自動で複製してから採番された Blueprint ID を書き込みました: {0}。複製元は変更していません。",
+    "log_auto_duplicated_profile": "[Avatar Variant] このセレクターがプロファイルに登録されていなかったため、自動で複製してから採番された Blueprint ID を書き込みました: {0}。複製元は変更していません。",
 
     "asset_edit_hint": "編集はアバターの Avatar Variant Selector から行ってください。",
     "asset_select_user": "このプロファイルを使っているアバターを選択",

@@ -60,6 +60,20 @@ namespace MinMinMart.AvatarVariant
     }
 
     /// <summary>
+    /// プロファイルの持ち主として登録されたセレクター 1 件分。
+    ///
+    /// Runtime アセンブリからは UnityEditor が使えないので、ただの文字列として持つだけにし、
+    /// 判定そのものは Editor 側の AvatarVariantProfileOwnership に任せる。
+    /// </summary>
+    [Serializable]
+    public class AvatarVariantProfileOwner
+    {
+        public string GlobalId = "";
+        public string SceneGuid = "";
+        public string ObjectPath = "";
+    }
+
+    /// <summary>
     /// 1 つのシーンから複数のアップロード先ぶんのアバターをビルドするための設定。
     ///
     /// シーンではなくアセットに置くのは、アップロードで採番された Blueprint ID を
@@ -77,12 +91,11 @@ namespace MinMinMart.AvatarVariant
         // Blueprint ID が採番されたら自動で書き写して空に戻る。
         [HideInInspector] public string PendingVariantKey = "";
 
-        // このプロファイルを使っているセレクター。シーンやアバターの複製を見分けるために記録する。
-        // Runtime アセンブリからは UnityEditor が使えないので、ただの文字列として持つだけにし、
-        // 判定そのものは Editor 側の AvatarVariantProfileOwnership に任せる。
-        [HideInInspector] public string OwnerGlobalId = "";
-        [HideInInspector] public string OwnerSceneGuid = "";
-        [HideInInspector] public string OwnerObjectPath = "";
+        // このプロファイルを使ってよいと登録されたセレクターの一覧。
+        // シーンやアバターを複製しただけの状態と、意図して共有している状態を見分けるために記録する。
+        // 登録済みのセレクターが複数あっても異常ではない。同じアバター構成を複数のセレクターで
+        // 共有している、という正常な宣言として扱う。
+        [HideInInspector] public List<AvatarVariantProfileOwner> Owners = new List<AvatarVariantProfileOwner>();
 
         // アップロード時に自動で複製されたことを一度だけ知らせるための印。
         // ユーザーが確認したら Inspector 側で false に戻す。
