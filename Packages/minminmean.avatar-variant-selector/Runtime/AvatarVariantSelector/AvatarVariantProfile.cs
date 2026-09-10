@@ -77,6 +77,17 @@ namespace MinMinMart.AvatarVariant
         // Blueprint ID が採番されたら自動で書き写して空に戻る。
         [HideInInspector] public string PendingVariantKey = "";
 
+        // このプロファイルを使っているセレクター。シーンやアバターの複製を見分けるために記録する。
+        // Runtime アセンブリからは UnityEditor が使えないので、ただの文字列として持つだけにし、
+        // 判定そのものは Editor 側の AvatarVariantProfileOwnership に任せる。
+        [HideInInspector] public string OwnerGlobalId = "";
+        [HideInInspector] public string OwnerSceneGuid = "";
+        [HideInInspector] public string OwnerObjectPath = "";
+
+        // アップロード時に自動で複製されたことを一度だけ知らせるための印。
+        // ユーザーが確認したら Inspector 側で false に戻す。
+        [HideInInspector] public bool AutoDuplicatedNotice;
+
 
         /// <summary>
         /// <paramref name="blueprintId"/> に一致するバリアントを返す。無ければ null。

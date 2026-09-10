@@ -3,8 +3,16 @@
     "profile_asset": "Profile",
     "profile_asset_help": "The asset that stores this component's settings.\nCreate a new profile, or assign an existing one.",
     "create_profile_asset": "Create Profile",
+    "new_profile": "New",
+    "duplicate_profile": "Duplicate Profile",
     "no_avatar_root": "No avatar root (VRCAvatarDescriptor) found. Place this component directly under an avatar.",
     "no_pipeline_manager": "'{0}' has no PipelineManager.",
+
+    "profile_foreign": "This profile is recorded as belonging to a different selector. If you duplicated a scene or avatar, the copy may still be pointing at the original profile.",
+    "profile_foreign_duplicate": "Duplicate and switch to it",
+    "profile_foreign_claim": "Make this selector the owner",
+    "profile_auto_duplicated": "This profile belonged to another selector, so a duplicate was created automatically before writing back the assigned blueprint ID. The original variant was left unchanged.",
+    "profile_auto_duplicated_dismiss": "OK",
 
     "build_target": "Build target: {0}",
     "build_target_none": "Build target: none selected",
@@ -63,6 +71,8 @@
     "log_adopted_blueprint_id": "[Avatar Variant] Copied the blueprint ID already in the PipelineManager ({0}) into the first variant.",
     "log_created_asset": "[Avatar Variant] Created profile: {0}",
     "log_wrote_back": "[Avatar Variant] Wrote the assigned blueprint ID back to variant '{0}' and saved it ({1}).",
+    "log_duplicated_profile": "[Avatar Variant] Duplicated the profile: {0}",
+    "log_auto_duplicated_profile": "[Avatar Variant] The profile belonged to a different selector, so it was duplicated automatically and the assigned blueprint ID was written to the copy: {0}. The original was left unchanged.",
 
     "asset_edit_hint": "Edit this from the Avatar Variant Selector on the avatar.",
     "asset_select_user": "Select the avatar using this profile",

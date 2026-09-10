@@ -18,8 +18,16 @@ namespace MinMinMart.AvatarVariant.Editor
         public string profile_asset;
         public string profile_asset_help;
         public string create_profile_asset;
+        public string new_profile;
+        public string duplicate_profile;
         public string no_avatar_root;
         public string no_pipeline_manager;
+
+        public string profile_foreign;
+        public string profile_foreign_duplicate;
+        public string profile_foreign_claim;
+        public string profile_auto_duplicated;
+        public string profile_auto_duplicated_dismiss;
 
         public string build_target;
         public string build_target_none;
@@ -78,6 +86,8 @@ namespace MinMinMart.AvatarVariant.Editor
         public string log_adopted_blueprint_id;
         public string log_created_asset;
         public string log_wrote_back;
+        public string log_duplicated_profile;
+        public string log_auto_duplicated_profile;
 
         public string asset_edit_hint;
         public string asset_select_user;

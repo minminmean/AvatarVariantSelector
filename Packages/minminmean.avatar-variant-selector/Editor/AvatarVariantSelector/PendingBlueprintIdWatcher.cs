@@ -53,6 +53,25 @@ namespace MinMinMart.AvatarVariant.Editor
             // 他のバリアントが既に使っている ID なら、採番されたものではないので触らない。
             if (profile.Variants.Any(v => v != null && v != pending && v.BlueprintId == pm.blueprintId)) return;
 
+            if (AvatarVariantProfileOwnership.Check(profile, selector) == AvatarVariantProfileOwnership.ProfileOwnershipState.Foreign)
+            {
+                // 持ち主が食い違うプロファイルには書き込めない。かといって通知を出して
+                // ユーザーの判断を待つと、次の Update が来るまでに採番された ID の書き戻し機会を
+                // 取りこぼしかねない。そのためここだけは確認を挟まず、自動で複製してから
+                // 複製の方に書き込む。複製は自分だけが持ち主になるので、他のバリアントの
+                // ID を巻き込む心配がない。
+                AvatarVariantProfile duplicate = AvatarVariantProfileFactory.DuplicateForSelector(selector);
+                AvatarVariantDefinition duplicatedPending = duplicate.PendingVariant;
+                if (duplicatedPending == null) return;
+
+                duplicate.AutoDuplicatedNotice = true;
+                Debug.LogWarning(string.Format(AvatarVariantLocalize.Dictionary.log_auto_duplicated_profile,
+                    AssetDatabase.GetAssetPath(duplicate)), duplicate);
+
+                profile = duplicate;
+                pending = duplicatedPending;
+            }
+
             Undo.RecordObject(profile, "Write back blueprint ID");
             pending.BlueprintId = pm.blueprintId;
             profile.PendingVariantKey = "";
