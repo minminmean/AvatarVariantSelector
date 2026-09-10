@@ -68,8 +68,15 @@ namespace MinMinMart.AvatarVariant
     [Serializable]
     public class AvatarVariantProfileOwner
     {
+        // 持ち主の同一性はこれだけで判定する。
         public string GlobalId = "";
+
+        // 記録が指すシーン。シーンごと消えた登録を落とすために使う。
         public string SceneGuid = "";
+
+        // 記録した時点での置き場所。どの登録がどのセレクターのものか調べるための控えで、
+        // 判定には使わない。同じ場所にあることを根拠にすると、アバターを作り直したときに
+        // 別物を登録済みと取り違えてしまう。
         public string ObjectPath = "";
     }
 

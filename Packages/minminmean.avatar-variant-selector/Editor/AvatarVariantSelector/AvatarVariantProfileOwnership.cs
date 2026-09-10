@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace MinMinMart.AvatarVariant.Editor
 {
@@ -63,44 +64,32 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// <paramref name="selector"/> が <paramref name="profile"/> の登録済みの持ち主かどうかを判定する。
         ///
-        /// 主キーは <see cref="GlobalObjectId"/>。一致しなくても、シーン GUID とヒエラルキーパスが
-        /// 両方一致する登録があれば「同じセレクターだが ID だけがずれた」とみなし、その登録を
-        /// 追従させた上で Owned を返す。データは書き換えず記録を更新するだけなので、この追従は
-        /// 自動で行ってよい。
+        /// 見るのは <see cref="GlobalObjectId"/> の一致だけ。同じシーンの同じ位置にあることを
+        /// 根拠にはしない。アバターを消して作り直したセレクターは、置き場所が同じでも別物として
+        /// 登録し直させる。複製したアバターを扱うためのツールである以上、ここを取り違える余地を
+        /// 残してはいけない。
         /// </summary>
         internal static ProfileOwnershipState Check(AvatarVariantProfile profile, AvatarVariantSelector selector)
         {
             if (profile == null || selector == null) return ProfileOwnershipState.Owned;
 
-            PurgeDeletedScenes(profile);
+            PurgeMissingOwners(profile);
 
-            // 登録が空＝この機能より前に作られた既存プロファイル、またはシーンごと持ち主が
-            // 消えて一覧が空になった状態。何も聞かずにこのセレクターを登録する。
+            // 登録が空＝この機能より前に作られた既存プロファイル、または持ち主が消えて
+            // 一覧が空になった状態。何も聞かずにこのセレクターを登録する。
             if (profile.Owners.Count == 0)
             {
                 Register(profile, selector);
                 return ProfileOwnershipState.Owned;
             }
 
-            string globalId = GlobalObjectId.GetGlobalObjectIdSlow(selector).ToString();
-            if (profile.Owners.Any(o => o.GlobalId == globalId)) return ProfileOwnershipState.Owned;
-
-            // シーンが一度も保存されていないとシーン GUID が空になり、GlobalObjectId も
-            // 保存されるまで安定しない。ここでは補助キーによる救済ができないだけなので、
-            // 事故にはならないと見て Owned として扱う。
+            // シーンが一度も保存されていないと GlobalObjectId が確定しない。判定材料が無いだけで
+            // 事故にはならないので、Owned として扱って警告を出さない。
             string sceneGuid = AssetDatabase.AssetPathToGUID(selector.gameObject.scene.path);
             if (string.IsNullOrEmpty(sceneGuid)) return ProfileOwnershipState.Owned;
 
-            string objectPath = GetHierarchyPath(selector.transform);
-            AvatarVariantProfileOwner matched =
-                profile.Owners.FirstOrDefault(o => o.SceneGuid == sceneGuid && o.ObjectPath == objectPath);
-
-            if (matched != null)
-            {
-                matched.GlobalId = globalId;
-                MarkChanged(profile);
-                return ProfileOwnershipState.Owned;
-            }
+            string globalId = GlobalObjectId.GetGlobalObjectIdSlow(selector).ToString();
+            if (profile.Owners.Any(o => o.GlobalId == globalId)) return ProfileOwnershipState.Owned;
 
             return ProfileOwnershipState.Foreign;
         }
@@ -159,15 +148,39 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// シーンごと削除された持ち主の記録を落とす。
+        /// 実体が失われた持ち主の記録を落とす。
         ///
-        /// シーンを消しても登録だけが残り続けると一覧が肥大化するうえ、別のシーンが偶然同じ
-        /// ヒエラルキーパスを持ったときに誤って Owned と判定されかねない。
+        /// 残したままにすると一覧が際限なく増えるうえ、後から同じ場所に置かれた無関係な
+        /// セレクターを登録済みと取り違える余地が残る。
         /// </summary>
-        private static void PurgeDeletedScenes(AvatarVariantProfile profile)
+        private static void PurgeMissingOwners(AvatarVariantProfile profile)
         {
-            int removed = profile.Owners.RemoveAll(o => string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(o.SceneGuid)));
+            // 落とすのは取り消せない操作なので、シーンやアセットの状態が固まっていない間は見送る。
+            // 読み込みの途中では、生きているオブジェクトが一時的に引けないことがある。
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+
+            int removed = profile.Owners.RemoveAll(o => o == null || !IsOwnerAlive(o));
             if (removed > 0) MarkChanged(profile);
+        }
+
+        /// <summary>
+        /// 登録されたセレクターが今も存在するか。
+        ///
+        /// 確かめられるのは、そのシーンが開かれている場合だけ。開かれていないシーンの登録は
+        /// 生死を判断する材料が無いので、生きているものとして残す。閉じているシーンの登録を
+        /// 落とすと、開き直すたびに登録し直しになってしまう。
+        /// </summary>
+        private static bool IsOwnerAlive(AvatarVariantProfileOwner owner)
+        {
+            string scenePath = AssetDatabase.GUIDToAssetPath(owner.SceneGuid);
+            if (string.IsNullOrEmpty(scenePath)) return false;
+
+            Scene scene = SceneManager.GetSceneByPath(scenePath);
+            if (!scene.IsValid() || !scene.isLoaded) return true;
+
+            if (!GlobalObjectId.TryParse(owner.GlobalId, out GlobalObjectId id)) return false;
+
+            return GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) != null;
         }
 
         /// <summary>
