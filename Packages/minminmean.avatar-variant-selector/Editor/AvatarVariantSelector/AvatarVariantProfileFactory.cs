@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -7,9 +8,9 @@ namespace MinMinMart.AvatarVariant.Editor
     /// <summary>
     /// プロファイルアセットを作る。
     ///
-    /// 置き場所は固定のフォルダにまとめ、ファイル名はアバター名にする。
+    /// 置き場所は固定のフォルダにまとめ、ファイル名はシーン名とアバター名から作る。
     /// シーンの隣に置くとアバターを複数のシーンで扱ったときに散らばるので、
-    /// 「どのアバターのプロファイルか」だけで探せる形にしている。
+    /// 「どのシーンのどのアバターか」だけで探せる形にしている。
     /// </summary>
     internal static class AvatarVariantProfileFactory
     {
@@ -28,8 +29,7 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             EnsureFolder(ProfileFolder);
 
-            string fileName = SanitizeFileName(FindAvatarName(selector));
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{fileName}.asset");
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{BuildFileName(selector)}.asset");
 
             AvatarVariantProfile profile = ScriptableObject.CreateInstance<AvatarVariantProfile>();
             AssetDatabase.CreateAsset(profile, path);
@@ -61,8 +61,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             EnsureFolder(ProfileFolder);
 
-            string fileName = SanitizeFileName(FindAvatarName(selector));
-            string destPath = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{fileName}.asset");
+            string destPath = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{BuildFileName(selector)}.asset");
 
             AssetDatabase.CopyAsset(sourcePath, destPath);
             AvatarVariantProfile duplicate = AssetDatabase.LoadAssetAtPath<AvatarVariantProfile>(destPath);
@@ -91,21 +90,41 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// ファイル名に使えない文字を _ に置き換える。
+        /// プロファイルのファイル名。シーン名とアバター名をつなげる。
         ///
-        /// アバター名はユーザーが自由に付けられるので、そのままパスに埋めると
+        /// アバター名だけだと、シーンを複製してプロファイルを分けたときに同じ名前が並んで
+        /// 見分けが付かない。どのシーンのものかまで入れておく。
+        /// どちらも取れなければ既定の名前にする。
+        /// </summary>
+        private static string BuildFileName(AvatarVariantSelector selector)
+        {
+            List<string> parts = new List<string>();
+
+            string sceneName = SanitizeFileName(selector.gameObject.scene.name);
+            if (!string.IsNullOrEmpty(sceneName)) parts.Add(sceneName);
+
+            string avatarName = SanitizeFileName(FindAvatarName(selector));
+            if (!string.IsNullOrEmpty(avatarName)) parts.Add(avatarName);
+
+            return parts.Count > 0 ? string.Join("_", parts) : FallbackFileName;
+        }
+
+        /// <summary>
+        /// ファイル名に使えない文字を _ に置き換える。使える文字が残らなければ空文字を返す。
+        ///
+        /// シーン名もアバター名もユーザーが自由に付けられるので、そのままパスに埋めると
         /// スラッシュやコロンでアセットの生成に失敗する。
         /// </summary>
         private static string SanitizeFileName(string name)
         {
-            if (string.IsNullOrEmpty(name)) return FallbackFileName;
+            if (string.IsNullOrEmpty(name)) return "";
 
             string sanitized = string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
 
             // 末尾のドットと空白は Windows が扱えないので落とす。
             sanitized = sanitized.Trim().TrimEnd('.').Trim();
 
-            return string.IsNullOrEmpty(sanitized.Replace("_", "")) ? FallbackFileName : sanitized;
+            return string.IsNullOrEmpty(sanitized.Replace("_", "")) ? "" : sanitized;
         }
 
         /// <summary>
