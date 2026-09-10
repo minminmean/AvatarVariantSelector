@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -24,10 +25,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             EditorGUILayout.HelpBox(LocalizeDict.asset_edit_hint, MessageType.Info);
 
-            if (GUILayout.Button(LocalizeDict.asset_select_user))
-            {
-                SelectUser(profile);
-            }
+            DrawUsers(profile);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(string.Format(LocalizeDict.variants_header, profile.Variants.Count), EditorStyles.boldLabel);
@@ -58,18 +56,80 @@ namespace MinMinMart.AvatarVariant.Editor
             }
         }
 
-        private static void SelectUser(AvatarVariantProfile profile)
-        {
-            foreach (AvatarVariantSelector selector in Object.FindObjectsOfType<AvatarVariantSelector>(true))
-            {
-                if (selector.Profile != profile) continue;
+        // ボタンの幅を揃えるための定数。行ごとにラベルの長さが違っても、ボタンは同じ幅で並べたい。
+        private const float UserButtonWidth = 90f;
 
-                Selection.activeGameObject = selector.gameObject;
-                EditorGUIUtility.PingObject(selector.gameObject);
+        /// <summary>
+        /// このプロファイルを使っているアバターの一覧を描く。
+        /// </summary>
+        private static void DrawUsers(AvatarVariantProfile profile)
+        {
+            List<AvatarVariantProfileUser> users = AvatarVariantProfileUserCollector.Collect(profile);
+
+            EditorGUILayout.LabelField(string.Format(LocalizeDict.asset_users_header, users.Count), EditorStyles.boldLabel);
+
+            if (users.Count == 0)
+            {
+                EditorGUILayout.HelpBox(LocalizeDict.asset_users_empty, MessageType.Info);
                 return;
             }
 
-            Debug.LogWarning(LocalizeDict.asset_user_not_found);
+            foreach (AvatarVariantProfileUser user in users)
+            {
+                DrawUserRow(user);
+            }
+        }
+
+        /// <summary>
+        /// 一覧の 1 行。左にラベル、右にボタン。
+        /// </summary>
+        private static void DrawUserRow(AvatarVariantProfileUser user)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(BuildUserLabel(user));
+
+                if (user.Object != null)
+                {
+                    if (GUILayout.Button(LocalizeDict.asset_user_select, GUILayout.Width(UserButtonWidth)))
+                    {
+                        Selection.activeGameObject = user.Object;
+                        EditorGUIUtility.PingObject(user.Object);
+                    }
+                }
+                else if (!user.Missing)
+                {
+                    // 実体を引けないのがシーンを開いていないせいなら、シーンの方を指し示す。
+                    using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(user.ScenePath)))
+                    {
+                        if (GUILayout.Button(LocalizeDict.asset_user_show_scene, GUILayout.Width(UserButtonWidth)))
+                        {
+                            Object sceneAsset = AssetDatabase.LoadAssetAtPath<Object>(user.ScenePath);
+                            EditorGUIUtility.PingObject(sceneAsset);
+                        }
+                    }
+                }
+                else
+                {
+                    // 登録はあるのに実体が見つからない行には、押せる操作が無い。
+                    // 幅だけ空けて、他の行とラベルの切れ目を揃える。
+                    GUILayout.Space(UserButtonWidth);
+                }
+            }
+        }
+
+        /// <summary>
+        /// シーン名とヒエラルキーパス、必要なら状態も添えたラベル。
+        /// </summary>
+        private static string BuildUserLabel(AvatarVariantProfileUser user)
+        {
+            string sceneName = string.IsNullOrEmpty(user.SceneName) ? "?" : user.SceneName;
+            string label = $"{sceneName} / {user.ObjectPath}";
+
+            if (user.Missing) return $"{label}  [{LocalizeDict.asset_user_missing}]";
+            if (!user.Registered) return $"{label}  [{LocalizeDict.asset_user_unregistered}]";
+
+            return label;
         }
     }
 }

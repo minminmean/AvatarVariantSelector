@@ -75,12 +75,17 @@
     "log_auto_duplicated_profile": "[Avatar Variant] This selector was not registered to the profile, so it was duplicated automatically and the assigned blueprint ID was written to the copy: {0}. The original was left unchanged.",
 
     "asset_edit_hint": "Edit this from the Avatar Variant Selector on the avatar.",
-    "asset_select_user": "Select the avatar using this profile",
     "asset_unnamed": "(unnamed)",
     "asset_operations": "Operations",
     "asset_operations_value": "remove {0} / material {1} / shape {2}",
     "asset_pending": "'{0}' is awaiting a new upload.",
-    "asset_user_not_found": "[Avatar Variant] No avatar referencing this profile was found in the open scenes.",
+
+    "asset_users_header": "Avatars using this profile ({0})",
+    "asset_users_empty": "No avatars are registered.",
+    "asset_user_select": "Select",
+    "asset_user_show_scene": "Show scene",
+    "asset_user_missing": "not found",
+    "asset_user_unregistered": "unregistered",
 
     "build_multiple_selectors": "[Avatar Variant] '{0}' has {1} AvatarVariantSelector components. Leave only one.",
     "build_no_profile": "[Avatar Variant] The AvatarVariantSelector on '{0}' has no profile assigned.",

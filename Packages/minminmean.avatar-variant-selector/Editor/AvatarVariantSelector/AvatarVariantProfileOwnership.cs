@@ -199,8 +199,10 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// シーンルートからのヒエラルキーパス。<see cref="AvatarVariantProfile.GetPath"/> は
         /// アバタールート基準の相対パスなので、シーン内の位置そのものを表すこちらは別に用意する。
+        ///
+        /// AvatarVariantProfileUserCollector からも同じ計算が要るため internal にして共有する。
         /// </summary>
-        private static string GetHierarchyPath(Transform target)
+        internal static string GetHierarchyPath(Transform target)
         {
             if (target == null) return "";
 
