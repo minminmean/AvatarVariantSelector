@@ -75,12 +75,17 @@
     "log_auto_duplicated_profile": "[Avatar Variant] このセレクターがプロファイルに登録されていなかったため、自動で複製してから採番された Blueprint ID を書き込みました: {0}。複製元は変更していません。",
 
     "asset_edit_hint": "編集はアバターの Avatar Variant Selector から行ってください。",
-    "asset_select_user": "このプロファイルを使っているアバターを選択",
     "asset_unnamed": "(名前なし)",
     "asset_operations": "操作",
     "asset_operations_value": "削除 {0} / マテリアル {1} / シェイプ {2}",
     "asset_pending": "「{0}」が新規アップロード待ちです。",
-    "asset_user_not_found": "[Avatar Variant] このプロファイルを参照しているアバターが、開いているシーンに見つかりません。",
+
+    "asset_users_header": "使っているアバター（{0}）",
+    "asset_users_empty": "登録されたアバターがありません。",
+    "asset_user_select": "選択",
+    "asset_user_show_scene": "シーンを表示",
+    "asset_user_missing": "見つかりません",
+    "asset_user_unregistered": "未登録",
 
     "build_multiple_selectors": "[Avatar Variant] '{0}' に AvatarVariantSelector が {1} 個あります。ひとつだけにしてください。",
     "build_no_profile": "[Avatar Variant] '{0}' の AvatarVariantSelector にプロファイルが割り当てられていません。",

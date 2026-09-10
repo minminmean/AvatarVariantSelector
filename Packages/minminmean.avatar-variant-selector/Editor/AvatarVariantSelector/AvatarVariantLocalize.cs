@@ -90,12 +90,17 @@ namespace MinMinMart.AvatarVariant.Editor
         public string log_auto_duplicated_profile;
 
         public string asset_edit_hint;
-        public string asset_select_user;
         public string asset_unnamed;
         public string asset_operations;
         public string asset_operations_value;
         public string asset_pending;
-        public string asset_user_not_found;
+
+        public string asset_users_header;
+        public string asset_users_empty;
+        public string asset_user_select;
+        public string asset_user_show_scene;
+        public string asset_user_missing;
+        public string asset_user_unregistered;
 
         public string build_multiple_selectors;
         public string build_no_profile;
