@@ -115,10 +115,46 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantLocalize.DrawLanguagePopup();
 
             serializedObject.Update();
+
+            // プロファイル欄と新規・複製ボタンを 1 行に収める。バリアント一覧の行と同じ作りにして、
+            // ボタンの幅もそちらに揃える。全幅のボタンだと押し間違えやすい。
+            Rect profileRow = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
+            int profileIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
+            Rect duplicateRect = new Rect(profileRow.xMax - ButtonWidth, profileRow.y, ButtonWidth, profileRow.height);
+            Rect createRect = new Rect(duplicateRect.x - ButtonWidth - 2f, profileRow.y, ButtonWidth, profileRow.height);
+            Rect profileFieldRect = new Rect(profileRow.x, profileRow.y, createRect.x - Gap - profileRow.x, profileRow.height);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("Profile"), new GUIContent(LocalizeDict.profile_asset));
+            EditorGUI.PropertyField(profileFieldRect, serializedObject.FindProperty("Profile"), new GUIContent(LocalizeDict.profile_asset));
             if (EditorGUI.EndChangeCheck()) _selectionNeedsFixing = true;
             serializedObject.ApplyModifiedProperties();
+
+            bool createProfile = GUI.Button(createRect, new GUIContent(LocalizeDict.new_profile, LocalizeDict.create_profile_asset));
+
+            // 複製元が無いときは押せないようにするだけで、ボタン自体は残す。
+            // 出入りさせるとコントロールの数が変わって、後ろの入力欄からフォーカスが外れる。
+            bool duplicateProfile;
+            using (new EditorGUI.DisabledScope(selector.Profile == null))
+            {
+                duplicateProfile = GUI.Button(duplicateRect, new GUIContent(LocalizeDict.duplicate, LocalizeDict.duplicate_profile));
+            }
+
+            EditorGUI.indentLevel = profileIndent;
+
+            // どちらもプロファイルが差し替わるので、以降の描画は次のフレームに譲る。
+            if (createProfile)
+            {
+                AvatarVariantProfileFactory.CreateForSelector(selector);
+                return;
+            }
+
+            if (duplicateProfile)
+            {
+                AvatarVariantProfileFactory.DuplicateForSelector(selector);
+                return;
+            }
 
             if (selector.Profile == null)
             {
@@ -149,7 +185,9 @@ namespace MinMinMart.AvatarVariant.Editor
             // 打っている最中にフォーカスが隣のコントロールへ移ってしまう。
             DrawSwitcher(profile, pm);
             EditorGUILayout.Space();
-            DrawNotices(profile, root, pm != null ? pm.blueprintId : null);
+
+            // 複製して差し替えた場合はプロファイルが差し替わるので、以降の処理は次の描画に譲る。
+            if (DrawNotices(profile, selector, root, pm != null ? pm.blueprintId : null)) return;
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
             // GUI.changed を見ると折りたたみの開閉まで拾ってしまう。
@@ -444,13 +482,83 @@ namespace MinMinMart.AvatarVariant.Editor
         // ---------- 通知欄 ----------
 
         /// <summary>
-        /// Warn と Info を描く。
-        /// どちらも内容はAvatarVariantNoticeCollectorに責務がある。
+        /// Warn と Info を描く。文字列だけの内容は <see cref="AvatarVariantNoticeCollector"/> に責務がある。
+        /// 持ち主の食い違いと自動複製のお知らせはボタンを伴うので、ここで直接描く。
+        ///
+        /// 戻り値は、プロファイルの差し替えが起きて以降の描画を続けられなくなったかどうか。
+        /// true のときは呼び出し側で OnInspectorGUI をそのまま抜けること。
         /// </summary>
-        private static void DrawNotices(AvatarVariantProfile profile, Transform root, string blueprintId)
+        private static bool DrawNotices(AvatarVariantProfile profile, AvatarVariantSelector selector, Transform root, string blueprintId)
         {
+            // 持ち主の食い違いは、ビルド時に問題になるわけではないが一覧の中に紛れさせたくないので、
+            // 既存の警告 HelpBox より前に単独で出す。
+            AvatarVariantProfileOwnership.ProfileOwnershipState ownership = AvatarVariantProfileOwnership.CheckForGui(profile, selector);
+            if (ownership == AvatarVariantProfileOwnership.ProfileOwnershipState.Foreign)
+            {
+                if (DrawForeignNotice(profile, selector)) return true;
+            }
+
             DrawHelpBoxes(AvatarVariantNoticeCollector.CollectProblems(profile, root, blueprintId), MessageType.Warning);
             DrawHelpBoxes(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
+
+            DrawAutoDuplicatedNotice(profile);
+
+            return false;
+        }
+
+        /// <summary>
+        /// 「このプロファイルは別のセレクターのものです」という警告と、対処の 2 択。
+        ///
+        /// 通知欄に置くのは、既存コードのコメントのとおり、入力欄より手前に出入りするものがあると
+        /// フォーカスが外れるため。ここも同じ理由でこの位置に置く。
+        /// 戻り値は、どちらかのボタンが押されてこの通知が消えるかどうか。
+        /// </summary>
+        private static bool DrawForeignNotice(AvatarVariantProfile profile, AvatarVariantSelector selector)
+        {
+            EditorGUILayout.HelpBox(LocalizeDict.profile_foreign, MessageType.Warning);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button(LocalizeDict.profile_foreign_duplicate))
+                {
+                    AvatarVariantProfileFactory.DuplicateForSelector(selector);
+                    return true;
+                }
+
+                if (GUILayout.Button(LocalizeDict.profile_foreign_claim))
+                {
+                    AvatarVariantProfileOwnership.Claim(profile, selector);
+
+                    // 押した時点でこの通知ごと消えるので、複製したときと同じく描画を打ち切る。
+                    // 数の変わるコントロールを描いたまま続けると、フォーカスの位置がずれる。
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// アップロード時に自動で複製されたことを一度だけ知らせる。
+        ///
+        /// ボタン付きの通知なので文字列だけを返す AvatarVariantNoticeCollector には載せられず、
+        /// ここで直接描く。閉じるボタンを押したら印を戻して保存する。
+        /// </summary>
+        private static void DrawAutoDuplicatedNotice(AvatarVariantProfile profile)
+        {
+            if (!profile.AutoDuplicatedNotice) return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.HelpBox(LocalizeDict.profile_auto_duplicated, MessageType.Info);
+
+                if (GUILayout.Button(LocalizeDict.profile_auto_duplicated_dismiss, GUILayout.Width(40f), GUILayout.ExpandHeight(true)))
+                {
+                    profile.AutoDuplicatedNotice = false;
+                    EditorUtility.SetDirty(profile);
+                    AvatarVariantProfileSaver.Save(profile);
+                }
+            }
         }
 
         // ---------- 補助 ----------

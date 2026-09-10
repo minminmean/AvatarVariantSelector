@@ -40,7 +40,45 @@ namespace MinMinMart.AvatarVariant.Editor
             EditorUtility.SetDirty(selector);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
 
+            // 作った時点でこのセレクターを持ち主として記録しておく。
+            AvatarVariantProfileOwnership.Claim(profile, selector);
+
             Debug.Log(string.Format(LocalizeDict.log_created_asset, path), profile);
+        }
+
+        /// <summary>
+        /// <paramref name="selector"/> が参照しているプロファイルを複製し、複製の方を割り当て直す。
+        ///
+        /// シーンやアバターを複製すると元のプロファイルを共有してしまうため、
+        /// 別々のプロファイルに分ける手段として用意する。バリアントの内容は Blueprint ID も
+        /// 含めてそのまま複製する。操作をまた組み直させないための措置で、
+        /// 要らない Blueprint ID は複製後にユーザーが消せばよい。
+        /// </summary>
+        internal static AvatarVariantProfile DuplicateForSelector(AvatarVariantSelector selector)
+        {
+            AvatarVariantProfile source = selector.Profile;
+            string sourcePath = AssetDatabase.GetAssetPath(source);
+
+            EnsureFolder(ProfileFolder);
+
+            string fileName = SanitizeFileName(FindAvatarName(selector));
+            string destPath = AssetDatabase.GenerateUniqueAssetPath($"{ProfileFolder}/{fileName}.asset");
+
+            AssetDatabase.CopyAsset(sourcePath, destPath);
+            AvatarVariantProfile duplicate = AssetDatabase.LoadAssetAtPath<AvatarVariantProfile>(destPath);
+
+            // 複製自体を持ち主として記録する。コピー元の記録をそのまま引き継ぐと、
+            // 複製したそばから Foreign 判定になってしまう。
+            AvatarVariantProfileOwnership.Claim(duplicate, selector);
+
+            Undo.RecordObject(selector, "Duplicate variant profile");
+            selector.Profile = duplicate;
+            EditorUtility.SetDirty(selector);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
+
+            Debug.Log(string.Format(LocalizeDict.log_duplicated_profile, destPath), duplicate);
+
+            return duplicate;
         }
 
         /// <summary>
