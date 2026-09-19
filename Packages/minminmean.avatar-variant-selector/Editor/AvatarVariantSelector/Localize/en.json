@@ -42,12 +42,16 @@
     "copy_suffix": " copy",
 
     "op_remove": "Objects to remove ({0})",
+
+    "op_active": "Objects to enable/disable ({0})",
     "op_material": "Materials to swap ({0})",
     "op_blendshape": "Blend shapes to set ({0})",
     "field_slot": "Slot",
     "field_material": "Material",
     "field_shape": "Shape",
     "field_value": "Value",
+    "toggle_on": "ON",
+    "toggle_off": "OFF",
     "add_entry": "+ Add",
     "drop_area": "Drag objects here to add",
     "path_broken": "Broken path: {0}",
@@ -65,6 +69,7 @@
     "warn_shape_no_renderer": "'{0}': blend shape target '{1}' was not found, or has no SkinnedMeshRenderer.",
     "warn_shape_unselected": "'{0}': no blend shape selected for '{1}'.",
     "warn_shape_missing": "'{0}': '{1}' has no blend shape named '{2}'.",
+    "warn_active_missing": "'{0}': enable/disable target '{1}' was not found. The build will fail.",
 
     "log_switched": "[Avatar Variant] Upload target switched to '{0}' ({1}).",
     "log_marked_pending": "[Avatar Variant] '{0}' is queued for a new upload. The blueprint ID was cleared, so the next upload creates a new avatar.",
@@ -77,7 +82,7 @@
     "asset_edit_hint": "Edit this from the Avatar Variant Selector on the avatar.",
     "asset_unnamed": "(unnamed)",
     "asset_operations": "Operations",
-    "asset_operations_value": "remove {0} / material {1} / shape {2}",
+    "asset_operations_value": "remove {0} / active {1} / material {2} / shape {3}",
     "asset_pending": "'{0}' is awaiting a new upload.",
 
     "asset_users_header": "Avatars using this profile ({0})",
@@ -99,5 +104,5 @@
     "build_no_renderer": "[Avatar Variant] '{0}': target '{1}' has no Renderer.",
     "build_slot_out_of_range": "[Avatar Variant] '{0}': material slot {2} on '{1}' is out of range ({3} slots).",
     "build_shape_missing": "[Avatar Variant] '{0}': '{1}' has no blend shape named '{2}'.",
-    "build_done": "[Avatar Variant] Built variant '{0}' ({1} object(s) removed, {2} material slot(s) overridden, {3} blend shape(s) set)."
+    "build_done": "[Avatar Variant] Built variant '{0}' ({1} object(s) removed, {2} active state(s) set, {3} material slot(s) overridden, {4} blend shape(s) set)."
 }

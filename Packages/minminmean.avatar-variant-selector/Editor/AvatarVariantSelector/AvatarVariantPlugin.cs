@@ -115,14 +115,16 @@ namespace MinMinMart.AvatarVariant.Editor
 
         private static void ApplyVariant(AvatarVariantDefinition variant, GameObject root)
         {
-            // 削除 → マテリアル → ブレンドシェイプ の順に適用する。
+            // 削除 → 有効状態 → マテリアル → ブレンドシェイプ の順に適用する。
             // パスはビルド用コピーのルートを基準に引くので、実シーンに触れることは無い。
             List<string> removedPaths = RemoveObjects(variant, root);
+            SetActiveStates(variant, root, removedPaths);
             OverrideMaterials(variant, root, removedPaths);
             SetBlendShapes(variant, root, removedPaths);
 
             Debug.Log(string.Format(LocalizeDict.build_done, variant.Name,
-                removedPaths.Count, variant.MaterialOverrides.Count, variant.BlendShapeChanges.Count));
+                removedPaths.Count, variant.ActiveChanges.Count,
+                variant.MaterialOverrides.Count, variant.BlendShapeChanges.Count));
         }
 
         /// <summary>
@@ -151,6 +153,27 @@ namespace MinMinMart.AvatarVariant.Editor
             }
 
             return removedPaths;
+        }
+
+        /// <summary>
+        /// オブジェクトの有効状態を切り替える。
+        /// </summary>
+        private static void SetActiveStates(AvatarVariantDefinition variant, GameObject root, List<string> removedPaths)
+        {
+            foreach (VariantActiveChange ac in variant.ActiveChanges)
+            {
+                if (ac == null || string.IsNullOrEmpty(ac.ObjectPath)) continue;
+
+                Transform target = AvatarVariantProfile.FindByPath(root.transform, ac.ObjectPath);
+                if (target == null)
+                {
+                    if (IsAlreadyRemoved(ac.ObjectPath, removedPaths)) continue;
+
+                    throw new System.Exception(string.Format(LocalizeDict.build_target_missing, variant.Name, ac.ObjectPath));
+                }
+
+                target.gameObject.SetActive(ac.Active);
+            }
         }
 
         /// <summary>

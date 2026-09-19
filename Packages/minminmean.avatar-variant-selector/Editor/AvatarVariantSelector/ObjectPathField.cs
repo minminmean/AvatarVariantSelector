@@ -86,9 +86,19 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// 複数まとめてドラッグ＆ドロップで追加できる領域。
+        /// 複数まとめてドラッグ＆ドロップで追加できる領域。パスの文字列をそのまま並べる一覧用。
         /// </summary>
         internal static void DrawDropArea(SerializedProperty paths, Transform root)
+        {
+            DrawDropArea(paths, root, (element, go, path) => element.stringValue = path);
+        }
+
+        /// <summary>
+        /// 複数まとめてドラッグ＆ドロップで追加できる領域。
+        /// 追加した要素の中身は <paramref name="fill"/> が、落とされたオブジェクトとそのパスから埋める。
+        /// </summary>
+        internal static void DrawDropArea(SerializedProperty list, Transform root,
+            System.Action<SerializedProperty, GameObject, string> fill)
         {
             Rect rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
             GUI.Box(rect, LocalizeDict.drop_area, EditorStyles.helpBox);
@@ -113,8 +123,8 @@ namespace MinMinMart.AvatarVariant.Editor
                     continue;
                 }
 
-                paths.arraySize++;
-                paths.GetArrayElementAtIndex(paths.arraySize - 1).stringValue = path;
+                list.arraySize++;
+                fill(list.GetArrayElementAtIndex(list.arraySize - 1), go, path);
                 AvatarVariantProfileSaver.Request();
             }
 

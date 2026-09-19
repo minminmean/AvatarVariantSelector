@@ -5,6 +5,18 @@ using UnityEngine;
 namespace MinMinMart.AvatarVariant
 {
     /// <summary>
+    /// ビルド時に切り替えるオブジェクトの有効状態 1 件分。
+    /// </summary>
+    [Serializable]
+    public class VariantActiveChange
+    {
+        // アバタールートからの相対パス。
+        public string ObjectPath = "";
+
+        public bool Active = true;
+    }
+
+    /// <summary>
     /// ビルド時に上書きするマテリアルスロット 1 件分。
     /// </summary>
     [Serializable]
@@ -51,6 +63,9 @@ namespace MinMinMart.AvatarVariant
 
         // このバリアントのビルドから削除するオブジェクト。アバタールートからの相対パス。
         public List<string> RemoveObjectPaths = new List<string>();
+
+        // このバリアントのビルドで有効・無効を切り替えるオブジェクト。
+        public List<VariantActiveChange> ActiveChanges = new List<VariantActiveChange>();
 
         // このバリアントのビルドで差し替えるマテリアルスロット。
         public List<VariantMaterialOverride> MaterialOverrides = new List<VariantMaterialOverride>();

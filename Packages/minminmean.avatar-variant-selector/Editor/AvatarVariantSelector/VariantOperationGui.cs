@@ -5,9 +5,9 @@ using UnityEngine;
 namespace MinMinMart.AvatarVariant.Editor
 {
     /// <summary>
-    /// バリアント 1 つに登録された操作（削除・マテリアル・ブレンドシェイプ）の編集欄。
+    /// バリアント 1 つに登録された操作（削除・有効状態・マテリアル・ブレンドシェイプ）の編集欄。
     ///
-    /// 3 種類とも「折りたたみ + 行の追加削除」という同じ形をしているので、
+    /// どの種類も「折りたたみ + 行の追加削除」という同じ形をしているので、
     /// バリアント一覧そのものの描画からは切り離してここにまとめている。
     /// </summary>
     internal static class VariantOperationGui
@@ -33,6 +33,60 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 ObjectPathField.DrawDropArea(paths, root);
             }
+        }
+
+        /// <summary>
+        /// 有効・無効を切り替えるオブジェクトの一覧。
+        /// </summary>
+        internal static void DrawActiveList(SerializedProperty list, Transform root)
+        {
+            bool expanded = FoldoutState.GetExpanded(list);
+            expanded = EditorGUILayout.Foldout(expanded, string.Format(LocalizeDict.op_active, list.arraySize), true);
+            FoldoutState.SetExpanded(list, expanded);
+            if (!expanded) return;
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                for (int i = 0; i < list.arraySize; i++)
+                {
+                    SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                    SerializedProperty activeProp = entry.FindPropertyRelative("Active");
+                    if (DrawPathRow(list, i, entry.FindPropertyRelative("ObjectPath"), root,
+                            () => DrawActiveChoice(activeProp))) return;
+                }
+
+                // 今の状態は見ずに、常に ON で入れる。
+                // 要素を増やすと直前の要素の値が複製されるので、明示的に書き込む。
+                ObjectPathField.DrawDropArea(list, root, (element, go, path) =>
+                {
+                    element.FindPropertyRelative("ObjectPath").stringValue = path;
+                    element.FindPropertyRelative("Active").boolValue = true;
+                });
+            }
+        }
+
+        /// <summary>
+        /// ON と OFF のチェックボックスを並べ、どちらか一方だけにチェックが入るようにする。
+        ///
+        /// EditorGUI 系のトグルはインデント分だけ中身をずらすため、幅を詰めた枠からはみ出して
+        /// クリックが隣の欄に吸われる。インデントの影響を受けない GUILayout 側で描く。
+        /// </summary>
+        private static void DrawActiveChoice(SerializedProperty activeProp)
+        {
+            bool active = activeProp.boolValue;
+
+            // チェック済みの側を押しても外れないよう、押されたら常にその側を選ぶ。
+            bool pickedOn = GUILayout.Toggle(active, LocalizeDict.toggle_on, EditorStyles.toggle, GUILayout.ExpandWidth(false));
+            bool pickedOff = GUILayout.Toggle(!active, LocalizeDict.toggle_off, EditorStyles.toggle, GUILayout.ExpandWidth(false));
+
+            bool next = active;
+            if (pickedOn != active) next = true;
+            else if (pickedOff != !active) next = false;
+            if (next == active) return;
+
+            // チェックの切り替えは 1 回きりの操作なので、その場で確定させる。
+            activeProp.boolValue = next;
+            AvatarVariantProfileSaver.Request();
         }
 
         /// <summary>
@@ -111,12 +165,15 @@ namespace MinMinMart.AvatarVariant.Editor
         /// <summary>
         /// 対象の指定欄と、その行を消すボタン。消したときは true を返す
         /// （呼び出し側は、その場で描画を打ち切ること）。
+        /// <paramref name="drawTrailing"/> を渡すと、指定欄の右（消すボタンの手前）に同じ行で描く。
         /// </summary>
-        private static bool DrawPathRow(SerializedProperty list, int index, SerializedProperty pathProp, Transform root)
+        private static bool DrawPathRow(SerializedProperty list, int index, SerializedProperty pathProp, Transform root,
+            System.Action drawTrailing = null)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
                 ObjectPathField.Draw(pathProp, root);
+                drawTrailing?.Invoke();
                 if (GUILayout.Button("−", GUILayout.Width(22)))
                 {
                     list.DeleteArrayElementAtIndex(index);

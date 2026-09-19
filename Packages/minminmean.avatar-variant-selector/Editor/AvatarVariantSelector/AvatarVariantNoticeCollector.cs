@@ -46,6 +46,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (root == null) continue;
 
                 problems.AddRange(CheckRemovePaths(variant, root));
+                problems.AddRange(CheckActiveChanges(variant, root));
                 problems.AddRange(CheckMaterialOverrides(variant, root));
                 problems.AddRange(CheckBlendShapes(variant, root));
             }
@@ -94,6 +95,23 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (AvatarVariantProfile.FindByPath(root, path) != null) continue;
 
                 problems.Add(string.Format(LocalizeDict.warn_remove_missing, variant.Name, path));
+            }
+
+            return problems;
+        }
+
+        /// <summary>
+        /// 有効状態の切り替え対象を 1 件ずつ確かめる。見つからないものだけを返す。
+        /// </summary>
+        private static List<string> CheckActiveChanges(AvatarVariantDefinition variant, Transform root)
+        {
+            List<string> problems = new List<string>();
+
+            foreach (VariantActiveChange ac in variant.ActiveChanges.Where(ac => ac != null && !string.IsNullOrEmpty(ac.ObjectPath)))
+            {
+                if (AvatarVariantProfile.FindByPath(root, ac.ObjectPath) != null) continue;
+
+                problems.Add(string.Format(LocalizeDict.warn_active_missing, variant.Name, ac.ObjectPath));
             }
 
             return problems;

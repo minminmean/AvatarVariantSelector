@@ -380,7 +380,7 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// 展開時に出す操作リスト（削除・マテリアル・ブレンドシェイプ）。
+        /// 展開時に出す操作リスト（削除・有効状態・マテリアル・ブレンドシェイプ）。
         /// </summary>
         private static void DrawVariantOperations(SerializedProperty variant, Transform root)
         {
@@ -388,6 +388,7 @@ namespace MinMinMart.AvatarVariant.Editor
             GUILayout.Label(LocalizeDict.operations_header, EditorStyles.miniBoldLabel);
 
             VariantOperationGui.DrawRemoveList(variant.FindPropertyRelative("RemoveObjectPaths"), root);
+            VariantOperationGui.DrawActiveList(variant.FindPropertyRelative("ActiveChanges"), root);
             VariantOperationGui.DrawMaterialList(variant.FindPropertyRelative("MaterialOverrides"), root);
             VariantOperationGui.DrawBlendShapeList(variant.FindPropertyRelative("BlendShapeChanges"), root);
         }
@@ -634,6 +635,7 @@ namespace MinMinMart.AvatarVariant.Editor
             v.FindPropertyRelative("Key").stringValue = System.Guid.NewGuid().ToString("N");
             v.FindPropertyRelative("BlueprintId").stringValue = blueprintId;
             v.FindPropertyRelative("RemoveObjectPaths").ClearArray();
+            v.FindPropertyRelative("ActiveChanges").ClearArray();
             v.FindPropertyRelative("MaterialOverrides").ClearArray();
             v.FindPropertyRelative("BlendShapeChanges").ClearArray();
 

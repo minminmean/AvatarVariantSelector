@@ -57,12 +57,15 @@ namespace MinMinMart.AvatarVariant.Editor
         public string copy_suffix;
 
         public string op_remove;
+        public string op_active;
         public string op_material;
         public string op_blendshape;
         public string field_slot;
         public string field_material;
         public string field_shape;
         public string field_value;
+        public string toggle_on;
+        public string toggle_off;
         public string add_entry;
         public string drop_area;
         public string path_broken;
@@ -80,6 +83,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public string warn_shape_no_renderer;
         public string warn_shape_unselected;
         public string warn_shape_missing;
+        public string warn_active_missing;
 
         public string log_switched;
         public string log_marked_pending;

@@ -44,7 +44,8 @@ namespace MinMinMart.AvatarVariant.Editor
                             string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId);
                         EditorGUILayout.LabelField(LocalizeDict.asset_operations,
                             string.Format(LocalizeDict.asset_operations_value,
-                                v.RemoveObjectPaths.Count, v.MaterialOverrides.Count, v.BlendShapeChanges.Count));
+                                v.RemoveObjectPaths.Count, v.ActiveChanges.Count,
+                                v.MaterialOverrides.Count, v.BlendShapeChanges.Count));
                     }
                 }
             }
