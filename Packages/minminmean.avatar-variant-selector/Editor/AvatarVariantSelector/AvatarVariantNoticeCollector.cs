@@ -25,13 +25,14 @@ namespace MinMinMart.AvatarVariant.Editor
         {
             List<string> problems = new List<string>();
 
-            // アップロード先が決まっていないと、ビルドしても PipelineManager の指定のまま上がる。
-            // 止めはしないが、意図しないアップロードになりやすいので先に知らせる。
+            // アップロード先が決まっていないとビルドが止まるので、先に知らせる。
+            // ID が入っていてどれにも一致しない場合は、対処のボタンを伴う別の通知を
+            // Inspector 側で出すので、ここでは ID が空のときだけを扱う。
             if (profile.Variants.All(v => v == null))
             {
                 problems.Add(LocalizeDict.warn_no_variants);
             }
-            else if (profile.ResolveForBuild(blueprintId, out bool _) == null)
+            else if (string.IsNullOrEmpty(blueprintId) && profile.ResolveForBuild(blueprintId, out bool _) == null)
             {
                 problems.Add(LocalizeDict.warn_no_selection);
             }

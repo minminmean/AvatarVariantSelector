@@ -34,6 +34,14 @@ namespace MinMinMart.AvatarVariant.Editor
         // このとき PipelineManager に残っている ID は、消えたバリアントのものになる。
         private bool _deletedCurrentVariant;
 
+        // 通知欄のボタンで頼まれた、プロファイルや PipelineManager への書き込み。
+        // 描画の途中で行うと SerializedObject の反映とぶつかるので、描画の最後まで持ち越す。
+        private System.Action _deferredAction;
+
+        // 選択中のバリアントの Blueprint ID 欄を書き換えた行。無ければ -1。
+        // PipelineManager 側を追従させないと、古い ID が「どのバリアントにも無い ID」として残ってしまう。
+        private int _editedCurrentIdIndex = -1;
+
         // ---------- スタイル ----------
 
         /// <summary>
@@ -204,6 +212,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 EditorGUILayout.Space();
             }
 
+            DrawUnknownIdNotice(profile, pm, locked);
             DrawNotices(profile, root, pm != null ? pm.blueprintId : null);
 
             // 編集はすべて SerializedProperty 経由なので、変更の検出はこれで足りる。
@@ -217,9 +226,30 @@ namespace MinMinMart.AvatarVariant.Editor
 
             // 反映が済んでから選び直す。追加したバリアントは、ここまで来ないと
             // profile.Variants に現れない。
+            // 反映が済んでからでないと、書き換えた ID が profile.Variants に現れない。
+            if (_editedCurrentIdIndex >= 0)
+            {
+                int index = _editedCurrentIdIndex;
+                _editedCurrentIdIndex = -1;
+
+                if (pm != null && index < profile.Variants.Count && profile.Variants[index] != null)
+                {
+                    AvatarVariantSwitcher.FollowEditedId(profile, pm, profile.Variants[index]);
+                }
+            }
+
             if (_selectionNeedsFixing)
             {
                 FixSelection(profile, pm);
+            }
+
+            // 通知欄のボタンで頼まれた操作。プロファイルを直接書き換えるので、
+            // SerializedObject の反映が済んだ後で行う。先に行うと反映で上書きされる。
+            if (_deferredAction != null)
+            {
+                System.Action action = _deferredAction;
+                _deferredAction = null;
+                action();
             }
 
             AvatarVariantProfileSaver.RequestOnFocusLost();
@@ -288,7 +318,9 @@ namespace MinMinMart.AvatarVariant.Editor
                     AvatarVariantProfileSaver.NameWatchedField(nameProp.propertyPath);
                     DrawFieldWithPlaceholder(rects.Name, nameProp, LocalizeDict.placeholder_name);
                     AvatarVariantProfileSaver.NameWatchedField(idProp.propertyPath);
+                    EditorGUI.BeginChangeCheck();
                     DrawFieldWithPlaceholder(rects.Id, idProp, LocalizeDict.placeholder_id);
+                    if (EditorGUI.EndChangeCheck() && isCurrent) _editedCurrentIdIndex = i;
 
                     bool duplicate = GUI.Button(rects.Duplicate, LocalizeDict.duplicate);
                     bool delete = GUI.Button(rects.Delete, LocalizeDict.delete);
@@ -512,6 +544,50 @@ namespace MinMinMart.AvatarVariant.Editor
             DrawHelpBoxes(AvatarVariantNoticeCollector.CollectInfos(profile), MessageType.Info);
 
             DrawAutoDuplicatedNotice(profile);
+        }
+
+        /// <summary>
+        /// PipelineManager の Blueprint ID がどのバリアントにも無いときの警告と、対処のボタン。
+        ///
+        /// アップロードを途中でキャンセルすると、SDK は ID を採番して PipelineManager に書いたまま
+        /// アバターを作らずに終わる。この状態はビルド時に止まるので、編集中に先に知らせて
+        /// 「ID を消す」か「未採番のバリアントに登録する」かを選べるようにする。
+        ///
+        /// 登録先は ID が空のバリアントに限る。既に ID を持つバリアントへ書くと、
+        /// そのアップロード先を黙って付け替えることになるため。
+        ///
+        /// 出入りするボタンを入力欄より後ろに置くため、通知欄に描く。
+        /// 押した操作は <see cref="_deferredAction"/> に積み、描画の最後で行う。
+        /// </summary>
+        private void DrawUnknownIdNotice(AvatarVariantProfile profile, VRC.Core.PipelineManager pm, bool locked)
+        {
+            if (pm == null || string.IsNullOrEmpty(pm.blueprintId)) return;
+
+            // 新規アップロード待ちがあれば、ビルドはそのバリアントで進むので止まらない。
+            // 予約されたばかりでまだ書き写していない ID も、この状態で見えている。
+            if (profile.ResolveForBuild(pm.blueprintId, out bool _) != null) return;
+
+            EditorGUILayout.HelpBox(string.Format(LocalizeDict.warn_unknown_id, pm.blueprintId), MessageType.Warning);
+
+            if (GUILayout.Button(LocalizeDict.unknown_id_clear))
+            {
+                _deferredAction = () => AvatarVariantSwitcher.ClearBlueprintId(pm);
+            }
+
+            // プロファイルへの書き込みになるので、持ち主が食い違っている間は押せなくする。
+            using (new EditorGUI.DisabledScope(locked))
+            {
+                foreach (AvatarVariantDefinition variant in profile.Variants)
+                {
+                    if (variant == null || !string.IsNullOrEmpty(variant.BlueprintId)) continue;
+
+                    string name = string.IsNullOrWhiteSpace(variant.Name) ? LocalizeDict.asset_unnamed : variant.Name;
+                    if (GUILayout.Button(string.Format(LocalizeDict.unknown_id_register, name)))
+                    {
+                        _deferredAction = () => AvatarVariantSwitcher.RegisterBlueprintId(profile, pm, variant);
+                    }
+                }
+            }
         }
 
         /// <summary>
