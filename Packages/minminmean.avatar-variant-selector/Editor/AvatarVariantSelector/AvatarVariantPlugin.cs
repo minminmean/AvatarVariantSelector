@@ -45,36 +45,39 @@ namespace MinMinMart.AvatarVariant.Editor
             AvatarVariantSelector[] selectors = root.GetComponentsInChildren<AvatarVariantSelector>(true);
             if (selectors.Length == 0) return;
 
-            AvatarVariantDefinition variant = ResolveTargetVariant(root, selectors);
-
-            if (variant == null)
+            try
             {
-                // どのバリアントも選ばれていない。Blueprint ID も空で上書き先が無いので、
-                // 何も適用せず PipelineManager に入っている指定のままアップロードさせる。
-                Debug.Log(LocalizeDict.build_no_selection);
-            }
-            else
-            {
+                AvatarVariantDefinition variant = ResolveTargetVariant(root, selectors);
                 ApplyVariant(variant, root);
             }
-
-            // ビルド成果物に残さない。
-            foreach (AvatarVariantSelector s in selectors)
+            catch (AvatarVariantBuildException e)
             {
-                Object.DestroyImmediate(s);
+                // 例外のまま NDMF に渡すと「内部エラー」扱いになり、コンソールには
+                // 「Failed to build avatar」しか残らず原因が埋もれる。設定の問題として報告し直し、
+                // コンソールにも本文を出す。深刻度 Error の報告だけでアップロードは止まる。
+                Debug.LogError(e.Message);
+                ErrorReport.ReportError(new AvatarVariantBuildError(e.Message));
+            }
+            finally
+            {
+                // ビルド成果物に残さない。
+                foreach (AvatarVariantSelector s in selectors)
+                {
+                    Object.DestroyImmediate(s);
+                }
             }
         }
 
         /// <summary>
-        /// ビルド対象のバリアントを決める。選ばれていなければ null。
-        /// コンポーネントの数やプロファイルの有無、Blueprint ID の不一致など、
-        /// ビルドを続けられない状態はここで例外にする。
+        /// ビルド対象のバリアントを決める。
+        /// コンポーネントの数やプロファイルの有無、ビルド対象が決まらない状態など、
+        /// ビルドを続けられない状態はここで例外にする。null は返さない。
         /// </summary>
         private static AvatarVariantDefinition ResolveTargetVariant(GameObject root, AvatarVariantSelector[] selectors)
         {
             if (selectors.Length > 1)
             {
-                throw new System.Exception(string.Format(LocalizeDict.build_multiple_selectors, root.name, selectors.Length));
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_multiple_selectors, root.name, selectors.Length));
             }
 
             AvatarVariantSelector selector = selectors[0];
@@ -82,7 +85,7 @@ namespace MinMinMart.AvatarVariant.Editor
 
             if (profile == null)
             {
-                throw new System.Exception(string.Format(LocalizeDict.build_no_profile, root.name));
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_no_profile, root.name));
             }
 
             // 編集中はディスクに書かず変更済みの印だけ付けているので、ここで書き出す。
@@ -99,10 +102,17 @@ namespace MinMinMart.AvatarVariant.Editor
                     .Where(v => v != null)
                     .Select(v => $"  {v.Name}: {(string.IsNullOrEmpty(v.BlueprintId) ? LocalizeDict.blueprint_id_unassigned : v.BlueprintId)}");
 
-                throw new System.Exception(string.Format(LocalizeDict.build_cannot_resolve,
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_cannot_resolve,
                     blueprintId,
                     string.Join("\n", known),
                     LocalizeDict.build_hint_switch));
+            }
+
+            // ID が空で新規アップロード待ちも無いときも止める。このまま進めると何も適用されず、
+            // シーンの内容（全部入り）がそのまま新しいアバターとして上がってしまう。
+            if (variant == null)
+            {
+                throw new AvatarVariantBuildException(LocalizeDict.build_no_target);
             }
 
             if (variant != null && viaPending)
@@ -149,7 +159,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 // 先に親ごと消していれば見つからないのが正しい。それ以外は設定ミスなので止める。
                 if (IsAlreadyRemoved(path, removedPaths)) continue;
 
-                throw new System.Exception(string.Format(LocalizeDict.build_remove_missing, variant.Name, path));
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_remove_missing, variant.Name, path));
             }
 
             return removedPaths;
@@ -169,7 +179,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 {
                     if (IsAlreadyRemoved(ac.ObjectPath, removedPaths)) continue;
 
-                    throw new System.Exception(string.Format(LocalizeDict.build_target_missing, variant.Name, ac.ObjectPath));
+                    throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_target_missing, variant.Name, ac.ObjectPath));
                 }
 
                 target.gameObject.SetActive(ac.Active);
@@ -191,7 +201,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 Material[] mats = renderer.sharedMaterials;
                 if (mo.Slot < 0 || mo.Slot >= mats.Length)
                 {
-                    throw new System.Exception(string.Format(LocalizeDict.build_slot_out_of_range,
+                    throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_slot_out_of_range,
                         variant.Name, mo.RendererPath, mo.Slot, mats.Length));
                 }
 
@@ -217,7 +227,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 SkinnedMeshRenderer renderer = resolved as SkinnedMeshRenderer;
                 if (renderer == null)
                 {
-                    throw new System.Exception(string.Format(LocalizeDict.build_no_skinned_renderer,
+                    throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_no_skinned_renderer,
                         variant.Name, bs.RendererPath));
                 }
 
@@ -225,7 +235,7 @@ namespace MinMinMart.AvatarVariant.Editor
                 int index = mesh != null ? mesh.GetBlendShapeIndex(bs.ShapeName) : -1;
                 if (index < 0)
                 {
-                    throw new System.Exception(string.Format(LocalizeDict.build_shape_missing,
+                    throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_shape_missing,
                         variant.Name, bs.RendererPath, bs.ShapeName));
                 }
 
@@ -258,13 +268,13 @@ namespace MinMinMart.AvatarVariant.Editor
             {
                 if (IsAlreadyRemoved(path, removedPaths)) return null;
 
-                throw new System.Exception(string.Format(LocalizeDict.build_target_missing, variantName, path));
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_target_missing, variantName, path));
             }
 
             Renderer renderer = t.GetComponent<Renderer>();
             if (renderer == null)
             {
-                throw new System.Exception(string.Format(LocalizeDict.build_no_renderer, variantName, path));
+                throw new AvatarVariantBuildException(string.Format(LocalizeDict.build_no_renderer, variantName, path));
             }
 
             return renderer;

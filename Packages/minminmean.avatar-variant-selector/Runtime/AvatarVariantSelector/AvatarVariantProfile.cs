@@ -110,7 +110,7 @@ namespace MinMinMart.AvatarVariant
         public List<AvatarVariantDefinition> Variants = new List<AvatarVariantDefinition>();
 
         // 新規アバターとしてアップロードする予定のバリアント。
-        // Blueprint ID が採番されたら自動で書き写して空に戻る。
+        // アップロードに成功したら、採番された Blueprint ID を自動で書き写して空に戻る。
         [HideInInspector] public string PendingVariantKey = "";
 
         // このプロファイルを使ってよいと登録されたセレクターの一覧。
@@ -158,9 +158,18 @@ namespace MinMinMart.AvatarVariant
         /// <summary>
         /// ビルドするバリアントを決める。
         ///
-        /// Blueprint ID が入っていればそれが唯一の判断材料で、一致しなければ null を返す
+        /// Blueprint ID がどれかのバリアントに一致すれば、それが唯一の判断材料になる。
+        /// 一致しない場合は新規アップロード待ちの指定を使い、それも無ければ null を返す
         /// （既存アバターを上書きする可能性があるため、推測はしない）。
-        /// ID が空の場合に限り、新規アップロード待ちの指定を使う。上書き先が存在しないので安全。
+        ///
+        /// ID が入っていても一致しなければ新規アップロード待ちを使うのは、新規アップロードでは
+        /// SDK がビルドの前に ID を予約して PipelineManager に書くため。予約された ID は
+        /// アップロードに成功するまでプロファイルに書き写さないので、ビルドの時点では一致しない。
+        /// 一致しない ID は登録済みのどのバリアントのアバターでもないので、既存のバリアントへ
+        /// 上書きすることはない。
+        ///
+        /// 待ちに指定されたバリアントに ID が入っている場合は使わない。そのバリアントの中身を
+        /// 別の ID のアバターへ上げることになるため。
         /// </summary>
         public AvatarVariantDefinition ResolveForBuild(string blueprintId, out bool viaPending)
         {
@@ -168,10 +177,9 @@ namespace MinMinMart.AvatarVariant
 
             AvatarVariantDefinition byId = Resolve(blueprintId);
             if (byId != null) return byId;
-            if (!string.IsNullOrEmpty(blueprintId)) return null;
 
             AvatarVariantDefinition pending = PendingVariant;
-            if (pending == null) return null;
+            if (pending == null || !string.IsNullOrEmpty(pending.BlueprintId)) return null;
 
             viaPending = true;
             return pending;

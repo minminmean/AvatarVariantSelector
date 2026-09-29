@@ -76,6 +76,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public string warn_no_variants;
         public string warn_no_selection;
+        public string warn_unknown_id;
+        public string unknown_id_clear;
+        public string unknown_id_register;
         public string warn_duplicate_id;
         public string warn_remove_missing;
         public string warn_material_missing;
@@ -88,6 +91,8 @@ namespace MinMinMart.AvatarVariant.Editor
         public string log_switched;
         public string log_marked_pending;
         public string log_adopted_blueprint_id;
+        public string log_cleared_blueprint_id;
+        public string log_registered_blueprint_id;
         public string log_created_asset;
         public string log_wrote_back;
         public string log_duplicated_profile;
@@ -111,7 +116,7 @@ namespace MinMinMart.AvatarVariant.Editor
         public string build_cannot_resolve;
         public string build_hint_switch;
         public string build_via_pending;
-        public string build_no_selection;
+        public string build_no_target;
         public string build_remove_missing;
         public string build_target_missing;
         public string build_no_renderer;
