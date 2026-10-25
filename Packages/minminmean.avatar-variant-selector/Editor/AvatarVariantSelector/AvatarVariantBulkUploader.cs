@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
@@ -25,6 +26,13 @@ namespace MinMinMart.AvatarVariant.Editor
     /// アップロードには、パネルが持っているアバター情報ではなく、ここで API から取り直したものを渡す。
     /// パネルは Blueprint ID の変化を 1 秒おきに見て取り直しているので、切り替え直後に
     /// パネル経由で上げると、空のアバター情報のまま進んで落ちることがあるため。
+    ///
+    /// SDK はアップロードのたびに、ID ごとに著作権の同意を求めてくる。押すまで止まるので放っておけない。
+    /// そこで始める前の確認ダイアログに、SDK と同じ同意の文言と対象のバリアント名を並べ、
+    /// 本人にまとめて一度同意してもらう。その同意を、ID ごとに SDK と同じ API で送る。
+    /// SDK に代わりに同意する正式な口は無く、同意済みかどうかは SDK 内部の SessionState のキーでも
+    /// 見ているので、そこにも書き足す（Continuous Avatar Uploader と同じやり方）。
+    /// SDK の更新でキーが変わった場合は、SDK のダイアログがまた出るようになるだけで、勝手に同意したことにはならない。
     ///
     /// 対象は Blueprint ID を持つバリアントだけ。新規アップロードには名前とサムネイルが要り、
     /// 放っておいて進める形にできないので、先に一度ふつうに上げてもらう。
@@ -52,6 +60,12 @@ namespace MinMinMart.AvatarVariant.Editor
 
         // 準備が揃い始めた時刻。揃っていなければ負。
         private static double _readySince = -1;
+
+        // SDK（VRCCopyrightAgreement）が持っている、著作権の同意の中身と、同意済みの ID を控える SessionState のキー。
+        // SDK 側では private なので、同じ値をここに書く。
+        private const string AgreementCode = "content.copyright.owned";
+        private const int AgreementVersion = 1;
+        private const string SdkAgreedContentKey = "VRCSdkControlPanel.CopyrightAgreement.ContentList";
 
         private static CancellationTokenSource _cancellation;
 
@@ -167,17 +181,23 @@ namespace MinMinMart.AvatarVariant.Editor
 
         /// <summary>
         /// 確認のダイアログを出し、了承されたら全部アップロードを始める。
+        ///
+        /// このダイアログで、対象のバリアントすべてについての著作権の同意もまとめて取る。
+        /// 同意の文言は SDK のものをそのまま出し、言い換えない。
         /// </summary>
         internal static void Start(AvatarVariantSelector selector, AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
         {
             if (IsActive || GetBlockReason(profile) != null) return;
 
-            List<string> ids = profile.Variants.Where(v => v != null).Select(v => v.BlueprintId).ToList();
+            List<AvatarVariantDefinition> variants = profile.Variants.Where(v => v != null).ToList();
+            List<string> ids = variants.Select(v => v.BlueprintId).ToList();
             List<BuildTarget> platforms = PlannedPlatforms();
 
             string order = string.Join(" → ", platforms.Select(PlatformName));
+            string names = string.Join("\n", variants.Select(v => "・" + DisplayName(v)));
             if (!EditorUtility.DisplayDialog(LocalizeDict.upload_all_confirm_title,
-                    string.Format(LocalizeDict.upload_all_confirm_message, ids.Count, order, ids.Count * platforms.Count),
+                    string.Format(LocalizeDict.upload_all_confirm_message, ids.Count, order, ids.Count * platforms.Count,
+                        names, VRC.SDKBase.VRCCopyrightAgreement.AgreementText),
                     LocalizeDict.upload_all_confirm_ok, LocalizeDict.delete_dialog_cancel))
             {
                 return;
@@ -286,22 +306,10 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 while (VariantIndex < ids.Count)
                 {
-                    if (!TryFindTarget(out AvatarVariantSelector selector, out VRC.Core.PipelineManager pm))
-                    {
-                        Finish(LocalizeDict.log_upload_all_selector_missing, LocalizeDict.log_upload_all_selector_missing);
-                        return;
-                    }
+                    if (!TryResolveStep(ids[VariantIndex], out AvatarVariantProfile profile, out VRC.Core.PipelineManager pm,
+                            out AvatarVariantDefinition variant)) return;
 
-                    AvatarVariantProfile profile = selector.Profile;
-                    AvatarVariantDefinition variant = profile.Resolve(ids[VariantIndex]);
-                    if (variant == null)
-                    {
-                        string message = string.Format(LocalizeDict.log_upload_all_variant_missing, ids[VariantIndex]);
-                        Finish(message, message);
-                        return;
-                    }
-
-                    string name = string.IsNullOrWhiteSpace(variant.Name) ? LocalizeDict.asset_unnamed : variant.Name;
+                    string name = DisplayName(variant);
                     failedVariant = name;
                     Debug.Log(string.Format(LocalizeDict.log_upload_all_step, PlatformName(platform), VariantIndex + 1, ids.Count, name));
                     UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
@@ -314,6 +322,7 @@ namespace MinMinMart.AvatarVariant.Editor
                     builder.SelectAvatar(pm.gameObject);
 
                     VRCAvatar avatar = await VRCApi.GetAvatar(variant.BlueprintId, true, _cancellation.Token);
+                    await RecordAgreement(variant.BlueprintId);
                     await builder.BuildAndUpload(pm.gameObject, avatar, null, _cancellation.Token);
 
                     VariantIndex++;
@@ -361,6 +370,75 @@ namespace MinMinMart.AvatarVariant.Editor
                 // 切り替えが効かなかったときは、準備待ちに戻ってもう一度試す。
                 if (IsActive) Kick();
             }
+        }
+
+        /// <summary>
+        /// 始める前に本人から取った著作権の同意を、この ID について SDK と同じ形で記録する。
+        ///
+        /// サーバーに同意を送り、SDK が同意済みの ID を控える SessionState にも書き足す。
+        /// SDK はサーバーの記録と控えの両方が揃っていないとダイアログを出すので、片方だけでは足りない。
+        /// 控えに書くのはサーバーへ送れた後にする。先に書くと、送れなかったのに同意済みとして通ってしまう。
+        /// </summary>
+        private static async Task RecordAgreement(string blueprintId)
+        {
+            List<string> agreed = SessionState.GetString(SdkAgreedContentKey, "")
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (agreed.Contains(blueprintId)) return;
+
+            VRCAgreementCheckResponse check = await VRCApi.CheckContentUploadConsent(new VRCAgreementCheckRequest
+            {
+                AgreementCode = AgreementCode,
+                ContentId = blueprintId,
+                Version = AgreementVersion,
+            });
+
+            if (!check.Agreed)
+            {
+                VRCAgreement result = await VRCApi.ContentUploadConsent(new VRCAgreement
+                {
+                    AgreementCode = AgreementCode,
+                    AgreementFulltext = VRC.SDKBase.VRCCopyrightAgreement.AgreementText,
+                    ContentId = blueprintId,
+                    Version = AgreementVersion,
+                });
+
+                if (result.ContentId != blueprintId || result.AgreementCode != AgreementCode || result.Version != AgreementVersion)
+                {
+                    throw new Exception("Failed to record the copyright agreement for " + blueprintId);
+                }
+            }
+
+            agreed.Add(blueprintId);
+            SessionState.SetString(SdkAgreedContentKey, string.Join(";", agreed));
+        }
+
+        /// <summary>
+        /// Blueprint ID から、いま上げるバリアントとその置き場を引く。見つからなければ止めて false を返す。
+        /// </summary>
+        private static bool TryResolveStep(string blueprintId, out AvatarVariantProfile profile,
+            out VRC.Core.PipelineManager pm, out AvatarVariantDefinition variant)
+        {
+            profile = null;
+            variant = null;
+
+            if (!TryFindTarget(out AvatarVariantSelector selector, out pm))
+            {
+                Finish(LocalizeDict.log_upload_all_selector_missing, LocalizeDict.log_upload_all_selector_missing);
+                return false;
+            }
+
+            profile = selector.Profile;
+            variant = profile.Resolve(blueprintId);
+            if (variant != null) return true;
+
+            string message = string.Format(LocalizeDict.log_upload_all_variant_missing, blueprintId);
+            Finish(message, message);
+            return false;
+        }
+
+        private static string DisplayName(AvatarVariantDefinition variant)
+        {
+            return string.IsNullOrWhiteSpace(variant.Name) ? LocalizeDict.asset_unnamed : variant.Name;
         }
 
         private static bool TryFindTarget(out AvatarVariantSelector selector, out VRC.Core.PipelineManager pm)
