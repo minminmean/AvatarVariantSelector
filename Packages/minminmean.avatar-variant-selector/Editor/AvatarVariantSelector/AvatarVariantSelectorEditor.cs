@@ -210,6 +210,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 DrawSwitcher(profile, pm);
                 EditorGUILayout.Space();
+
+                DrawUploadAll(selector, profile, pm);
+                EditorGUILayout.Space();
             }
 
             DrawUnknownIdNotice(profile, pm, locked);
@@ -486,7 +489,8 @@ namespace MinMinMart.AvatarVariant.Editor
                 return;
             }
 
-            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            // 全部アップロードの最中に切り替えると、上げ先が手順とずれるので押せなくする。
+            using (new EditorGUI.DisabledScope(Application.isPlaying || AvatarVariantBulkUploader.IsActive))
             {
                 for (int i = 0; i < profile.Variants.Count; i++)
                 {
@@ -514,6 +518,43 @@ namespace MinMinMart.AvatarVariant.Editor
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 全バリアントを PC と Android の両方へ続けて上げるボタン。動いている間は進み具合と中止ボタンを出す。
+        ///
+        /// 使えない理由があるときもボタンは消さずに押せなくし、理由を下に添える。
+        /// </summary>
+        private static void DrawUploadAll(AvatarVariantSelector selector, AvatarVariantProfile profile, VRC.Core.PipelineManager pm)
+        {
+            if (pm == null || profile.Variants.All(v => v == null)) return;
+
+            GUILayout.Label(LocalizeDict.upload_all_header, EditorStyles.boldLabel);
+
+            string progress = AvatarVariantBulkUploader.GetProgressText();
+            if (progress != null)
+            {
+                EditorGUILayout.HelpBox(progress, MessageType.Info);
+                if (GUILayout.Button(LocalizeDict.upload_all_cancel, GUILayout.Height(26)))
+                {
+                    AvatarVariantBulkUploader.Cancel();
+                }
+
+                return;
+            }
+
+            string order = string.Join(" → ", AvatarVariantBulkUploader.PlannedPlatforms().Select(AvatarVariantBulkUploader.PlatformName));
+            string blockReason = AvatarVariantBulkUploader.GetBlockReason(profile);
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying || blockReason != null))
+            {
+                if (GUILayout.Button(string.Format(LocalizeDict.upload_all_button, order), GUILayout.Height(26)))
+                {
+                    AvatarVariantBulkUploader.Start(selector, profile, pm);
+                }
+            }
+
+            if (blockReason != null) EditorGUILayout.HelpBox(blockReason, MessageType.Info);
         }
 
         /// <summary>
