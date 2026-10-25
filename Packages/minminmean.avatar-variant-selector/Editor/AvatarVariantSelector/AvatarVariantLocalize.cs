@@ -43,6 +43,22 @@ namespace MinMinMart.AvatarVariant.Editor
         public string mark_new_upload;
         public string pending_banner;
 
+        public string upload_all_header;
+        public string upload_all_button;
+        public string upload_all_needs_ids;
+        public string upload_all_duplicate_ids;
+        public string upload_all_no_build_support;
+        public string upload_all_no_panel;
+        public string upload_all_confirm_title;
+        public string upload_all_confirm_message;
+        public string upload_all_confirm_ok;
+        public string upload_all_progress;
+        public string upload_all_waiting;
+        public string upload_all_switching;
+        public string upload_all_cancel;
+        public string upload_all_done;
+        public string upload_all_failed;
+
         public string variants_header;
         public string variant_unnamed;
         public string placeholder_name;
@@ -97,6 +113,11 @@ namespace MinMinMart.AvatarVariant.Editor
         public string log_wrote_back;
         public string log_duplicated_profile;
         public string log_auto_duplicated_profile;
+        public string log_upload_all_step;
+        public string log_upload_all_switching;
+        public string log_upload_all_cancelled;
+        public string log_upload_all_selector_missing;
+        public string log_upload_all_variant_missing;
 
         public string asset_edit_hint;
         public string asset_unnamed;
