@@ -45,18 +45,21 @@ namespace MinMinMart.AvatarVariant.Editor
 
         public string upload_all_header;
         public string upload_all_button;
+        public string upload_all_current_only;
         public string upload_all_needs_ids;
         public string upload_all_duplicate_ids;
         public string upload_all_no_build_support;
         public string upload_all_no_panel;
         public string upload_all_confirm_title;
         public string upload_all_confirm_message;
+        public string upload_all_confirm_switch_note;
         public string upload_all_confirm_ok;
         public string upload_all_progress;
         public string upload_all_waiting;
         public string upload_all_switching;
         public string upload_all_cancel;
         public string upload_all_done;
+        public string upload_all_done_returning;
         public string upload_all_failed;
 
         public string variants_header;

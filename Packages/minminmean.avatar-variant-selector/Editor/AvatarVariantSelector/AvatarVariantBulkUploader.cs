@@ -12,9 +12,10 @@ namespace MinMinMart.AvatarVariant.Editor
 {
     /// <summary>
     /// 全バリアントを、PC と Android の両方へ続けてアップロードする。
+    /// 「現在のプラットフォームだけ」にすると、切り替えずにいまのプラットフォームだけで一周する。
     ///
-    /// いまのプラットフォームで全バリアントを上げ終えてから、もう一方へ切り替えてもう一周する。
-    /// 切り替えを往復させないので、ビルドターゲットの切り替えは 1 回で済む。
+    /// 両方へ上げるときは、いまのプラットフォームで全バリアントを上げ終えてから、もう一方へ切り替えてもう一周する。
+    /// 上げ終えたら、始める前のプラットフォームへ切り替えて戻す。
     ///
     /// SDK のマルチプラットフォーム機能には乗らない。あちらは続きの状態の数え違いで、
     /// PC と Android を行き来しながら上げ続けることがあるため、プラットフォームは自前で回す。
@@ -48,6 +49,9 @@ namespace MinMinMart.AvatarVariant.Editor
         private const string PlatformIndexKey = KeyPrefix + "PlatformIndex";
         private const string VariantIndexKey = KeyPrefix + "VariantIndex";
         private const string OriginalIdKey = KeyPrefix + "OriginalId";
+
+        // 「現在のプラットフォームだけ」のチェック。次に開いたときも同じ選び方で始められるよう、EditorPrefs に持つ。
+        private const string CurrentPlatformOnlyKey = KeyPrefix + "CurrentPlatformOnly";
 
         // パネルが開いてログインが済んでも、ビルダーの中身が揃うまで少しかかる。
         // その間にビルドを呼ぶと「SDK パネルを開いてください」で落ちるので、揃ってから少し待つ。
@@ -106,6 +110,16 @@ namespace MinMinMart.AvatarVariant.Editor
             set => SessionState.SetInt(VariantIndexKey, value);
         }
 
+        internal static bool CurrentPlatformOnly
+        {
+            get => EditorPrefs.GetBool(CurrentPlatformOnlyKey, false);
+            set
+            {
+                // Inspector から毎フレーム渡されるので、変わったときだけ書く。
+                if (value != CurrentPlatformOnly) EditorPrefs.SetBool(CurrentPlatformOnlyKey, value);
+            }
+        }
+
         private static List<string> Split(string joined)
         {
             return joined.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -153,11 +167,17 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// 回す順のプラットフォーム。いまのプラットフォームを先にして、切り替えを 1 回で済ませる。
+        /// 回す順のプラットフォーム。いまのプラットフォームを先にして、行きの切り替えを 1 回で済ませる。
+        /// 「現在のプラットフォームだけ」なら、いまのプラットフォームひとつ。
         /// </summary>
         internal static List<BuildTarget> PlannedPlatforms()
         {
             BuildTarget current = EditorUserBuildSettings.activeBuildTarget;
+            if (CurrentPlatformOnly)
+            {
+                return new List<BuildTarget> { current == BuildTarget.Android ? BuildTarget.Android : BuildTarget.StandaloneWindows64 };
+            }
+
             return current == BuildTarget.Android
                 ? new List<BuildTarget> { BuildTarget.Android, BuildTarget.StandaloneWindows64 }
                 : new List<BuildTarget> { BuildTarget.StandaloneWindows64, BuildTarget.Android };
@@ -195,9 +215,12 @@ namespace MinMinMart.AvatarVariant.Editor
 
             string order = string.Join(" → ", platforms.Select(PlatformName));
             string names = string.Join("\n", variants.Select(v => "・" + DisplayName(v)));
+            string switchNote = platforms.Count > 1
+                ? string.Format(LocalizeDict.upload_all_confirm_switch_note, PlatformName(platforms[0])) + "\n"
+                : "";
             if (!EditorUtility.DisplayDialog(LocalizeDict.upload_all_confirm_title,
                     string.Format(LocalizeDict.upload_all_confirm_message, ids.Count, order, ids.Count * platforms.Count,
-                        names, VRC.SDKBase.VRCCopyrightAgreement.AgreementText),
+                        names, VRC.SDKBase.VRCCopyrightAgreement.AgreementText, switchNote),
                     LocalizeDict.upload_all_confirm_ok, LocalizeDict.delete_dialog_cancel))
             {
                 return;
@@ -333,8 +356,19 @@ namespace MinMinMart.AvatarVariant.Editor
                 if (PlatformIndex + 1 >= platforms.Count)
                 {
                     int total = ids.Count * platforms.Count;
-                    string done = string.Format(LocalizeDict.upload_all_done, total, PlatformName(platform));
+                    BuildTarget first = platforms[0];
+                    bool returning = first != platform;
+                    string done = returning
+                        ? string.Format(LocalizeDict.upload_all_done_returning, total, PlatformName(first))
+                        : string.Format(LocalizeDict.upload_all_done, total);
                     Finish(done, null, done);
+
+                    // 両方へ上げたときは、始める前のプラットフォームへ戻す。状態は消してあるので、リロード後に再開はしない。
+                    if (returning)
+                    {
+                        EditorUserBuildSettings.SwitchActiveBuildTargetAsync(BuildPipeline.GetBuildTargetGroup(first), first);
+                    }
+
                     return;
                 }
 

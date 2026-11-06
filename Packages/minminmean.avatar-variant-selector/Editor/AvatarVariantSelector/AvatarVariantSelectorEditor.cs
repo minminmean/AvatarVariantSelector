@@ -521,7 +521,8 @@ namespace MinMinMart.AvatarVariant.Editor
         }
 
         /// <summary>
-        /// 全バリアントを PC と Android の両方へ続けて上げるボタン。動いている間は進み具合と中止ボタンを出す。
+        /// 全バリアントを PC と Android の両方へ続けて上げるボタン。チェックを入れると、いまのプラットフォームだけで上げる。
+        /// 動いている間は進み具合と中止ボタンを出す。
         ///
         /// 使えない理由があるときもボタンは消さずに押せなくし、理由を下に添える。
         /// </summary>
@@ -542,6 +543,9 @@ namespace MinMinMart.AvatarVariant.Editor
 
                 return;
             }
+
+            AvatarVariantBulkUploader.CurrentPlatformOnly = EditorGUILayout.ToggleLeft(
+                LocalizeDict.upload_all_current_only, AvatarVariantBulkUploader.CurrentPlatformOnly);
 
             string order = string.Join(" → ", AvatarVariantBulkUploader.PlannedPlatforms().Select(AvatarVariantBulkUploader.PlatformName));
             string blockReason = AvatarVariantBulkUploader.GetBlockReason(profile);
