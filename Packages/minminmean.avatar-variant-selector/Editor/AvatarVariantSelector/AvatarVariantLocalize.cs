@@ -59,7 +59,8 @@ namespace MinMinMart.AvatarVariant.Editor
         public string upload_all_switching;
         public string upload_all_cancel;
         public string upload_all_done;
-        public string upload_all_done_returning;
+        public string upload_all_done_returned;
+        public string upload_all_return_failed;
         public string upload_all_failed;
 
         public string variants_header;

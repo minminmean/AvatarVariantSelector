@@ -44,7 +44,8 @@
     "upload_all_switching": "全部アップロード中: {0} に切り替えています。",
     "upload_all_cancel": "中止",
     "upload_all_done": "全部アップロードしました（計 {0} 回）。",
-    "upload_all_done_returning": "全部アップロードしました（計 {0} 回）。ビルドターゲットを {1} に戻します。",
+    "upload_all_done_returned": "全部アップロードしました（計 {0} 回）。ビルドターゲットを {1} に戻しました。",
+    "upload_all_return_failed": "全部アップロードしました（計 {0} 回）。ただ、ビルドターゲットを {1} に戻せませんでした。",
     "upload_all_failed": "{0} で「{1}」のアップロードに失敗したため、止めました。\n{2}",
 
     "variants_header": "バリアント（{0}）",

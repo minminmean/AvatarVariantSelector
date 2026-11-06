@@ -53,6 +53,11 @@ namespace MinMinMart.AvatarVariant.Editor
         // 「現在のプラットフォームだけ」のチェック。次に開いたときも同じ選び方で始められるよう、EditorPrefs に持つ。
         private const string CurrentPlatformOnlyKey = KeyPrefix + "CurrentPlatformOnly";
 
+        // 元のプラットフォームへ戻している間、戻し終えてから出す完了の知らせと、戻す先。
+        // 切り替えでドメインリロードが起きるので、SessionState に持ち越す。
+        private const string ReturnNoticeKey = KeyPrefix + "ReturnNotice";
+        private const string ReturnTargetKey = KeyPrefix + "ReturnTarget";
+
         // パネルが開いてログインが済んでも、ビルダーの中身が揃うまで少しかかる。
         // その間にビルドを呼ぶと「SDK パネルを開いてください」で落ちるので、揃ってから少し待つ。
         private const double SettleSeconds = 5.0;
@@ -76,6 +81,7 @@ namespace MinMinMart.AvatarVariant.Editor
         static AvatarVariantBulkUploader()
         {
             if (IsActive) EditorApplication.delayCall += Kick;
+            if (SessionState.GetString(ReturnNoticeKey, "") != "") EditorApplication.delayCall += WatchReturn;
         }
 
         // ---------- 状態 ----------
@@ -357,18 +363,17 @@ namespace MinMinMart.AvatarVariant.Editor
                 {
                     int total = ids.Count * platforms.Count;
                     BuildTarget first = platforms[0];
-                    bool returning = first != platform;
-                    string done = returning
-                        ? string.Format(LocalizeDict.upload_all_done_returning, total, PlatformName(first))
-                        : string.Format(LocalizeDict.upload_all_done, total);
-                    Finish(done, null, done);
-
-                    // 両方へ上げたときは、始める前のプラットフォームへ戻す。状態は消してあるので、リロード後に再開はしない。
-                    if (returning)
+                    string done = string.Format(LocalizeDict.upload_all_done, total);
+                    if (first == platform)
                     {
-                        EditorUserBuildSettings.SwitchActiveBuildTargetAsync(BuildPipeline.GetBuildTargetGroup(first), first);
+                        Finish(done, null, done);
+                        return;
                     }
 
+                    // 両方へ上げたときは、始める前のプラットフォームへ戻し、戻し終えてから完了を知らせる。
+                    // 状態は消すので、リロード後にアップロードを再開はしない。
+                    Finish(done, null);
+                    ReturnTo(first, total);
                     return;
                 }
 
@@ -518,6 +523,65 @@ namespace MinMinMart.AvatarVariant.Editor
                 Debug.Log(log);
                 if (notice != null) EditorUtility.DisplayDialog(LocalizeDict.upload_all_confirm_title, notice, "OK");
             }
+        }
+
+        // ---------- 元のプラットフォームへ戻す ----------
+
+        /// <summary>
+        /// 始める前のプラットフォームへ切り替える。完了の知らせは、切り替え終えてから <see cref="WatchReturn"/> が出す。
+        /// 切り替えを始められなかったときは、戻せなかったことを添えてその場で知らせる。
+        /// </summary>
+        private static void ReturnTo(BuildTarget target, int total)
+        {
+            SessionState.SetString(ReturnNoticeKey, string.Format(LocalizeDict.upload_all_done_returned, total, PlatformName(target)));
+            SessionState.SetInt(ReturnTargetKey, (int)target);
+
+            Debug.Log(string.Format(LocalizeDict.log_upload_all_switching, PlatformName(target)));
+            if (EditorUserBuildSettings.SwitchActiveBuildTargetAsync(BuildPipeline.GetBuildTargetGroup(target), target))
+            {
+                WatchReturn();
+                return;
+            }
+
+            ClearReturn();
+            string message = string.Format(LocalizeDict.upload_all_return_failed, total, PlatformName(target));
+            Debug.LogError(message);
+            EditorUtility.DisplayDialog(LocalizeDict.upload_all_confirm_title, message, "OK");
+        }
+
+        private static void WatchReturn()
+        {
+            EditorApplication.update -= WaitForReturn;
+            EditorApplication.update += WaitForReturn;
+        }
+
+        /// <summary>
+        /// 切り替えとその後のリロードが済んだら、完了を知らせる。
+        /// リロード前のドメインでも待っているので、知らせる前に控えを消して二度出さないようにする。
+        /// </summary>
+        private static void WaitForReturn()
+        {
+            string notice = SessionState.GetString(ReturnNoticeKey, "");
+            if (notice == "")
+            {
+                EditorApplication.update -= WaitForReturn;
+                return;
+            }
+
+            BuildTarget target = (BuildTarget)SessionState.GetInt(ReturnTargetKey, (int)BuildTarget.NoTarget);
+            if (EditorUserBuildSettings.activeBuildTarget != target
+                || EditorApplication.isCompiling
+                || EditorApplication.isUpdating) return;
+
+            EditorApplication.update -= WaitForReturn;
+            ClearReturn();
+            EditorUtility.DisplayDialog(LocalizeDict.upload_all_confirm_title, notice, "OK");
+        }
+
+        private static void ClearReturn()
+        {
+            SessionState.EraseString(ReturnNoticeKey);
+            SessionState.EraseInt(ReturnTargetKey);
         }
 
         // ---------- 表示用 ----------

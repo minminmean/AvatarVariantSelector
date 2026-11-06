@@ -44,7 +44,8 @@
     "upload_all_switching": "Uploading all: switching to {0}.",
     "upload_all_cancel": "Stop",
     "upload_all_done": "Uploaded everything ({0} uploads).",
-    "upload_all_done_returning": "Uploaded everything ({0} uploads). Switching the build target back to {1}.",
+    "upload_all_done_returned": "Uploaded everything ({0} uploads). The build target is back on {1}.",
+    "upload_all_return_failed": "Uploaded everything ({0} uploads), but the build target could not be switched back to {1}.",
     "upload_all_failed": "Stopped because uploading '{1}' on {0} failed.\n{2}",
 
     "variants_header": "Variants ({0})",
